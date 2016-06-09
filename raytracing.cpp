@@ -13,15 +13,13 @@
 #endif
 #include "raytracing.h"
 
-
-//temporary variables
-//these are only used to illustrate 
-//a simple debug drawing. A ray 
+// Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
 
-
-//use this function for any preprocessing of the mesh.
+/**
+* Use this function for any preprocessing of the mesh.
+*/
 void init()
 {
 	//load the mesh file
@@ -40,24 +38,24 @@ void init()
 	MyLightPositions.push_back(MyCameraPosition);
 }
 
-//return the color of your pixel.
+/**
+* Return the color of your pixel.
+*/
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 {
 	return Vec3Df(dest[0],dest[1],dest[2]);
 }
 
-
-
+/**
+* Draw open gl debug stuff here. This function is called every frame.
+*/
 void yourDebugDraw()
 {
-	//draw open gl debug stuff
-	//this function is called every frame
-
-	//let's draw the mesh
+	// Draw the mesh.
 	MyMesh.draw();
 	
-	//let's draw the lights in the scene as points
-	glPushAttrib(GL_ALL_ATTRIB_BITS); //store all GL attributes
+	// Draw the lights in the scene as points.
+	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
 	glDisable(GL_LIGHTING);
 	glColor3f(1,1,1);
 	glPointSize(10);
@@ -65,14 +63,9 @@ void yourDebugDraw()
 	for (int i=0;i<MyLightPositions.size();++i)
 		glVertex3fv(MyLightPositions[i].pointer());
 	glEnd();
-	glPopAttrib();//restore all GL attributes
-	//The Attrib commands maintain the state. 
-	//e.g., even though inside the two calls, we set
-	//the color to white, it will be reset to the previous 
-	//state after the pop.
+	glPopAttrib();									// (Restore all GL attributes.)
 
-
-	//as an example: we draw the test ray, which is set by the keyboard function
+	// Draw the test ray, which is set by the keyboard function.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
@@ -87,7 +80,7 @@ void yourDebugDraw()
 	glEnd();
 	glPopAttrib();
 	
-	//draw whatever else you want...
+	// Draw whatever else you want...
 	////glutSolidSphere(1,10,10);
 	////allows you to draw a sphere at the origin.
 	////using a glTranslate, it can be shifted to whereever you want
@@ -95,27 +88,25 @@ void yourDebugDraw()
 	////triangulated sphere is nice for the preview
 }
 
-
-//yourKeyboardFunc is used to deal with keyboard input.
-//t is the character that was pressed
-//x,y is the mouse position in pixels
-//rayOrigin, rayDestination is the ray that is going in the view direction UNDERNEATH your mouse position.
-//
-//A few keys are already reserved: 
-//'L' adds a light positioned at the camera location to the MyLightPositions vector
-//'l' modifies the last added light to the current 
-//    camera position (by default, there is only one light, so move it with l)
-//    ATTENTION These lights do NOT affect the real-time rendering. 
-//    You should use them for the raytracing.
-//'r' calls the function performRaytracing on EVERY pixel, using the correct associated ray. 
-//    It then stores the result in an image "result.ppm".
-//    Initially, this function is fast (performRaytracing simply returns 
-//    the target of the ray - see the code above), but once you replaced 
-//    this function and raytracing is in place, it might take a 
-//    while to complete...
+/**
+* yourKeyboardFunc is used to deal with keyboard input.
+* 
+* - t is the character that was pressed.
+* - x is the mouse's x position in pixels.
+* - y is the mouse's y position in pixels.
+* - rayOrigin, rayDestination represent the ray that is going in the view direction underneath your mouse position.
+*
+* Reserved keys:
+* - 'L' adds a light positioned at the camera location to the MyLightPositions vector.
+* - 'l' modifies the last added light to the current camera position (by default, there is only one light, so move it 
+*	with l). ATTENTION: These lights do NOT affect the real-time rendering. You should use them for the raytracing.
+* - 'r' calls the function performRaytracing on EVERY pixel, using the correct associated ray. It then stores the result
+*	in an image "result.ppm". Initially, this function is fast (performRaytracing simply returns the target of the ray -
+*	see the code above), but once you replaced this function and raytracing is in place, it might take a while to 
+*	complete...
+*/
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination)
 {
-
 	//here, as an example, I use the ray to fill in the values for my upper global ray variable
 	//I use these variables in the debugDraw function to draw the corresponding ray.
 	//try it: Press a key, move the camera, see the ray that was launched as a line.
@@ -125,7 +116,6 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	// do here, whatever you want with the keyboard input t.
 	
 	//...
-	
 	
 	std::cout<<t<<" pressed! The mouse was in location "<<x<<","<<y<<"!"<<std::endl;	
 }
