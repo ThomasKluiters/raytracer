@@ -21,6 +21,7 @@ These tasks are in progress:
 * Implement refraction (R)
 * Implement reflection (R)
 * Implement textures (E)
+* Implement openGL debug (M)
 
 ## Done
 
