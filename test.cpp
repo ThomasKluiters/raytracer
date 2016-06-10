@@ -28,12 +28,6 @@ int main() {
 	float t5v2[] = { 4, -2, 0 };
 	float t5v3[] = { 6, -3, 0 };
 
-	// Triangle 5
-	float t5v1[] = { -1, -2, 0 };
-	float t5v2[] = { 4, -2, 0 };
-	float t5v3[] = { 6, -3, 0 };
-
-
 	triangles.push_back(Triangle{ t1v1, t1v2, t1v3 });
 	triangles.push_back(Triangle{ t2v1, t2v2, t2v3 });
 	triangles.push_back(Triangle{ t3v1, t3v2, t3v3 });
@@ -41,5 +35,4 @@ int main() {
 	triangles.push_back(Triangle{ t5v1, t5v2, t5v3 });
 
 	build(triangles);
-
 }
