@@ -266,8 +266,13 @@ Plane findPlane(int N[3], Voxel V, vector<Event> E)
 
 Voxel sceneVoxel(vector<Triangle> &triangles)
 {
-	Voxel voxel = { *triangles[0].v1, *triangles[0].v1};
-	
+	Voxel voxel;
+	for (int i = 0; i < 3; i++) {
+		voxel.max[i] = triangles[0].v1[i];
+		voxel.min[i] = triangles[0].v1[i];
+	}
+
+
 	for (auto triangle = triangles.begin(); triangle != triangles.end(); ++triangle)
 	{
 		for (int i = 0; i < 3; i++)

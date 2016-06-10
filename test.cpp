@@ -34,5 +34,5 @@ int main() {
 	triangles.push_back(Triangle{ t4v1, t4v2, t4v3 });
 	triangles.push_back(Triangle{ t5v1, t5v2, t5v3 });
 
-	build(triangles);
+	build(triangles);	
 }
