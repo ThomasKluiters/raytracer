@@ -96,6 +96,9 @@ inline bool compareEvents(const Event &a, const Event &b)
 		(a.position == b.position && a.dimension == b.dimension && a.type < b.type);
 }
 
+/**
+*	Returns the lowest of three floats.
+*/
 inline float min3(float a, float b, float c)
 {
 	if (a <= b && a <= c)	return a;
@@ -103,6 +106,9 @@ inline float min3(float a, float b, float c)
 	return c;
 }
 
+/**
+*	Returns the highest of three floats.
+*/
 inline float max3(float a, float b, float c)
 {
 	if (a >= b && a >= c)	return a;
