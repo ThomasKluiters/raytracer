@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <algorithm>
 #include <mutex>
 
@@ -8,11 +9,12 @@ using namespace std;
 
 typedef unsigned char byte;
 
-const float traveralCost = 100;
+const float traveralCost = 10;
 const float triangleTestCost = 14;
 
 const byte LEFT = 0;
 const byte RIGHT = 1;
+const byte BOTH = 2;
 
 const byte END = 0;
 const byte PLANAR = 1;
@@ -115,10 +117,12 @@ inline float max3(float a, float b, float c)
 *	An event is considered to be PLANAR when the triangle lies on the given dimensionsional plane. Else, two seperate
 *	events, START and END, will be generated.
 */
-inline void generateEvent(Triangle triangle, vector<Event> &events, int N[3])
+inline void generateEvent(Triangle & triangle, vector<Event> &events, int N[3])
 {
 	for (byte dimension = 0; dimension < 3; dimension++)
 	{
+		Triangle* ptr = &triangle;
+
 		float smallest = min3(
 			triangle.v1[dimension],
 			triangle.v2[dimension],
@@ -134,7 +138,7 @@ inline void generateEvent(Triangle triangle, vector<Event> &events, int N[3])
 		// The event is PLANAR.
 		if (smallest == largest)
 		{
-			events.push_back({ smallest, dimension, PLANAR, &triangle });
+			events.push_back({ smallest, dimension, PLANAR, ptr });
 
 			N[dimension]++;
 		}
@@ -142,8 +146,8 @@ inline void generateEvent(Triangle triangle, vector<Event> &events, int N[3])
 		// The triangle has two distinct SRART and END events.
 		else
 		{
-			events.push_back({ smallest, dimension,	START,	&triangle });
-			events.push_back({ largest,	 dimension,	END,	&triangle });
+			events.push_back({ smallest, dimension,	START,	ptr });
+			events.push_back({ largest,	 dimension,	END,	ptr });
 
 			N[dimension] += 2;
 		}
@@ -218,7 +222,7 @@ pair<float, byte> SAH(Voxel V, Plane p, int N_l, int N_r, int N_p)
 /**
 *	Incrementally finds the best split candidate plane in O(n) time according to Wald et al Algorithm 5.
 */
-Plane findPlane(int N[3], Voxel V, vector<Event> E)
+Split findPlane(int N[3], Voxel V, vector<Event> E)
 {
 	Split best;
 	best.cost = FLT_MAX;
@@ -230,6 +234,7 @@ Plane findPlane(int N[3], Voxel V, vector<Event> E)
 	for (auto E_i = E.begin(); E_i != E.end(); )
 	{
 		const Plane plane = { E_i->position, E_i->dimension };
+		byte dimension = E_i->dimension;
 		int p[3] = { 0, 0, 0 };
 
 		for (byte type = END; type <= START; type++)
@@ -252,7 +257,7 @@ Plane findPlane(int N[3], Voxel V, vector<Event> E)
 		float cost = C.first;
 		byte side = C.second;
 
- 		if (best.cost > cost && plane.dimension != 2) {
+ 		if (best.cost > cost && dimension != 2) {
 			best = { cost, plane, side };
 		}
 
@@ -261,7 +266,7 @@ Plane findPlane(int N[3], Voxel V, vector<Event> E)
 		N_p[plane.dimension] = 0;
 	}
 
-	return best.plane;
+	return best;
 }
 
 Voxel sceneVoxel(vector<Triangle> &triangles)
@@ -289,6 +294,93 @@ Voxel sceneVoxel(vector<Triangle> &triangles)
 
 }
 
+/**
+*	Classifies the given Triangles into a left and right side of the splitting Plane.
+*/
+pair<vector<Triangle*>, vector<Triangle*>> classify(vector<Triangle> & T, vector<Event> & E, Split p)
+{
+	byte planeDimension = p.plane.dimension;
+	float planePosition = p.plane.position;
+
+	vector<Triangle*> left;
+	vector<Triangle*> right;
+
+	unordered_map<Triangle*, byte> classifiedTriangles;
+
+	for (auto triangle = T.begin(); triangle != T.end(); ++triangle)
+	{
+		classifiedTriangles[&(*triangle)] = BOTH;
+	}
+
+	for (auto event = E.begin(); event != E.end(); event++)
+	{
+		if (event->dimension == planeDimension)
+		{
+			switch (event->type)
+			{
+			case END:
+				if (event->position <= planePosition)
+				{
+					classifiedTriangles[event->triangle] = LEFT;
+				}
+				break;
+
+			case START:
+				if (event->position >= planePosition)
+				{
+					classifiedTriangles[event->triangle] = RIGHT;
+				}
+				break;
+
+			case PLANAR:
+				if (event->position < planePosition || (event->position == planePosition && p.side == LEFT))
+				{
+					classifiedTriangles[event->triangle] = LEFT;
+				}
+				else
+				{
+					classifiedTriangles[event->triangle] = RIGHT;
+				}
+				break;
+
+			default:
+				printf("O shit waddup\n"); // pls don't hurt us
+			}
+		}
+	}
+
+	for (auto triangle : classifiedTriangles)
+	{
+		if (triangle.second == LEFT || triangle.second == BOTH)
+			left.push_back(triangle.first);
+
+		if (triangle.second == RIGHT || triangle.second == BOTH)
+			right.push_back(triangle.first);
+	}
+
+	return make_pair(left, right);
+}
+
+/**
+*	Implements the Termiante function according to Wald et al. function (6).
+*/
+bool terminate(vector<Triangle> T, float C_v)
+{
+	return T.size() * triangleTestCost < C_v;
+}
+
+/**
+*	Builds the tree according according to Wald et al. algorithm 1.
+*/
+void buildTree(vector<Triangle> & T, vector<Event> & E, Voxel V, int N[3])
+{
+	Split split = findPlane(N, V, E);
+	pair<vector<Triangle*>, vector<Triangle*>> classification = classify(T, E, split);
+
+
+	// no termination -> split into two lists of triangles and buildTree on those
+}
+
 /** 
 *	Builds the KD tree.
 */
@@ -307,5 +399,7 @@ void build(vector<Triangle>& triangles)
 
 	std::sort(events.begin(), events.end(), compareEvents);
 
-	Plane plane = findPlane(N, scene, events);
+	Split split = findPlane(N, scene, events);
+
+	auto x = classify(triangles, events, split);
 }

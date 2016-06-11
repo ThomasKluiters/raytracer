@@ -60,7 +60,7 @@ void keyboard(unsigned char key, int x, int y);
 /**
  * Main function.
  */
-int main(int argc, char** argv)
+int ayy(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 
