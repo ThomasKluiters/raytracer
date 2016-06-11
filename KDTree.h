@@ -24,15 +24,28 @@ const byte X_AXIS = 0;
 const byte Y_AXIS = 1;
 const byte Z_AXIS = 2;
 
+struct KDTree
+{
+	Voxel voxel;
+
+	KDTree* left;
+	KDTree* right;
+
+	vector<Triangle*> triangles;
+
+	bool isLeaf()
+	{
+		return left == NULL && right == NULL;
+	}
+};
+
 /**
 *	Represents a plane in the given position and in the given dimension .
 */
 struct Plane 
 {
-
 	float position;
 	byte dimension;
-	
 };
 
 /**
@@ -40,10 +53,8 @@ struct Plane
 */
 struct Voxel
 {
-
 	float min[3];
 	float max[3];
-
 };
 
 /**
@@ -51,11 +62,9 @@ struct Voxel
  */	
 struct Triangle 
 {
-
 	float* v1;
 	float* v2;
 	float* v3;
-
 };
 
 /*
@@ -66,11 +75,23 @@ struct Split
 	float cost;
 	Plane plane;
 	byte side;
+	int N[3];
+};
+
+/**
+*	Represents a Classification between a list of events and a list of triangles.
+*/
+struct Classification
+{
+	vector<Triangle*> T_l;
+	vector<Triangle*> T_r;
+
+	vector<Event> E_l;
+	vector<Event> E_r;
 };
 
 struct Event
 {
-
 	// The poisition of this event
 	float position;
 
@@ -82,7 +103,6 @@ struct Event
 
 	// A reference to the triangle this Event belongs to
 	Triangle* triangle;
-
 };
 
 /**
@@ -303,19 +323,23 @@ Voxel sceneVoxel(vector<Triangle> &triangles)
 /**
 *	Classifies the given Triangles into a left and right side of the splitting Plane.
 */
-pair<vector<Triangle*>, vector<Triangle*>> classify(vector<Triangle> & T, vector<Event> & E, Split p)
+Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 {
 	byte planeDimension = p.plane.dimension;
 	float planePosition = p.plane.position;
 
-	vector<Triangle*> left;
-	vector<Triangle*> right;
+	vector<Triangle*> T_l;
+	vector<Triangle*> T_r;
+
+	vector<Event> E_l;
+	vector<Event> E_r;
 
 	unordered_map<Triangle*, byte> classifiedTriangles;
+	classifiedTriangles.reserve(T.size());
 
 	for (auto triangle = T.begin(); triangle != T.end(); ++triangle)
 	{
-		classifiedTriangles[&(*triangle)] = BOTH;
+		classifiedTriangles[(*triangle)] = BOTH;
 	}
 
 	for (auto event = E.begin(); event != E.end(); event++)
@@ -350,7 +374,7 @@ pair<vector<Triangle*>, vector<Triangle*>> classify(vector<Triangle> & T, vector
 				break;
 
 			default:
-				printf("O shit waddup\n"); // pls don't hurt us
+				printf("Dat boi\n"); // pls don't hurt us
 			}
 		}
 	}
@@ -358,19 +382,38 @@ pair<vector<Triangle*>, vector<Triangle*>> classify(vector<Triangle> & T, vector
 	for (auto triangle : classifiedTriangles)
 	{
 		if (triangle.second == LEFT || triangle.second == BOTH)
-			left.push_back(triangle.first);
+			T_l.push_back(triangle.first);
 
 		if (triangle.second == RIGHT || triangle.second == BOTH)
-			right.push_back(triangle.first);
+			T_r.push_back(triangle.first);
 	}
 
-	return make_pair(left, right);
+	for (auto event : E)
+	{
+		switch(classifiedTriangles[event.triangle])
+		{
+
+		case LEFT:
+			E_l.push_back(event);
+			break;
+
+		case RIGHT:
+			E_r.push_back(event);
+			break;
+
+		default:
+			printf("O shit waddup\n");
+			break;
+		}
+	}
+
+	return { T_l, T_r, E_l, E_r };
 }
 
 /**
 *	Implements the Termiante function according to Wald et al. function (6).
 */
-bool terminate(vector<Triangle> T, float C_v)
+bool terminate(vector<Triangle*> T, float C_v)
 {
 	return T.size() * triangleTestCost < C_v;
 }
@@ -378,13 +421,28 @@ bool terminate(vector<Triangle> T, float C_v)
 /**
 *	Builds the tree according according to Wald et al. algorithm 1.
 */
-void buildTree(vector<Triangle> & T, vector<Event> & E, Voxel V, int N[3])
+KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N[3])
 {
 	Split split = findPlane(N, V, E);
-	pair<vector<Triangle*>, vector<Triangle*>> classification = classify(T, E, split);
 
+	if (terminate(T, split.cost))
+	{
+		return KDTree{ V, NULL, NULL, T };
+	}
+
+	Classification classification = classify(T, E, split);
+	
+	pair<Voxel, Voxel> children = splitBox(V, split.plane);
+	Voxel V_l = children.first;
+	Voxel V_r = children.second;
 
 	// no termination -> split into two lists of triangles and buildTree on those
+	return KDTree{
+		V,
+		&construct(classification.T_l, classification.E_l, V_l, N),
+		&construct(classification.T_r, classification.E_r, V_r, N),
+		vector<Triangle*>()
+	};
 }
 
 /** 
@@ -406,6 +464,4 @@ void build(vector<Triangle>& triangles)
 	std::sort(events.begin(), events.end(), compareEvents);
 
 	Split split = findPlane(N, scene, events);
-
-	auto x = classify(triangles, events, split);
 }
