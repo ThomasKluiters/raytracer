@@ -14,7 +14,6 @@ These tasks have not yet been started:
 ## In Progress
 
 These tasks are in progress:
-* Multi-threading of the main raytracing loop (G & C)
 * SIMD ray-triangle intersection (G & C)
 * Simple AABB acceleration structure (L & T)
 * Implement refraction (R)
@@ -28,3 +27,4 @@ These tasks are done:
 
 * Implement soft shadows
 * Implement shadows
+* Multi-threading of the main raytracing loop (G & C)
