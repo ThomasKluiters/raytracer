@@ -4,10 +4,8 @@
 
 These tasks have not yet been started:
 * Implement openGL debug ()
-* Implement shadows
 * Implement advanced acceleration structure (L & T)
 * Implement depth of field
-* Implement soft shadows
 * Implement motion blur
 * Implement gaussian blur
 * Implement distributed raytracing
@@ -26,3 +24,6 @@ These tasks are in progress:
 ## Done
 
 These tasks are done:
+
+* Implement soft shadows
+* Implement shadows
