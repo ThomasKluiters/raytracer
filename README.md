@@ -14,6 +14,7 @@ These tasks have not yet been started:
 ## In Progress
 
 These tasks are in progress:
+* Multi-threading (G & C)
 * SIMD ray-triangle intersection (G & C)
 * Simple AABB acceleration structure (L & T)
 * Implement refraction (R)
