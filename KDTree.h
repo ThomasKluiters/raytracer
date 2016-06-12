@@ -24,6 +24,26 @@ const byte X_AXIS = 0;
 const byte Y_AXIS = 1;
 const byte Z_AXIS = 2;
 
+/**
+*	A Triangle with 3 arrays representing vertices.
+*/
+struct Triangle
+{
+	float* v1;
+	float* v2;
+	float* v3;
+};
+
+/**
+*	A rectangular prism in space representing a region of the scene.
+*/
+struct Voxel
+{
+	float min[3];
+	float max[3];
+};
+
+
 struct KDTree
 {
 	Voxel voxel;
@@ -48,25 +68,6 @@ struct Plane
 	byte dimension;
 };
 
-/**
-*	A rectangular prism in space representing a region of the scene.
-*/
-struct Voxel
-{
-	float min[3];
-	float max[3];
-};
-
-/**
- *	A Triangle with 3 arrays representing vertices. 
- */	
-struct Triangle 
-{
-	float* v1;
-	float* v2;
-	float* v3;
-};
-
 /*
 *	Represents a split in a 3 dimensional plane.
 */
@@ -76,18 +77,6 @@ struct Split
 	Plane plane;
 	byte side;
 	int N[3];
-};
-
-/**
-*	Represents a Classification between a list of events and a list of triangles.
-*/
-struct Classification
-{
-	vector<Triangle*> T_l;
-	vector<Triangle*> T_r;
-
-	vector<Event> E_l;
-	vector<Event> E_r;
 };
 
 struct Event
@@ -104,6 +93,20 @@ struct Event
 	// A reference to the triangle this Event belongs to
 	Triangle* triangle;
 };
+
+
+/**
+*	Represents a Classification between a list of events and a list of triangles.
+*/
+struct Classification
+{
+	vector<Triangle*> T_l;
+	vector<Triangle*> T_r;
+
+	vector<Event> E_l;
+	vector<Event> E_r;
+};
+
 
 /**
 *	Compare the two events based on the relation a <_E B described in Wald et al.
@@ -143,7 +146,7 @@ inline float max3(float a, float b, float c)
 *	An event is considered to be PLANAR when the triangle lies on the given dimensionsional plane. Else, two seperate
 *	events, START and END, will be generated.
 */
-inline void generateEvent(Triangle & triangle, vector<Event> &events, int N[3])
+inline void generateEvent(Triangle & triangle, vector<Event> &events)
 {
 	for (byte dimension = 0; dimension < 3; dimension++)
 	{
@@ -165,8 +168,6 @@ inline void generateEvent(Triangle & triangle, vector<Event> &events, int N[3])
 		if (smallest == largest)
 		{
 			events.push_back({ smallest, dimension, PLANAR, ptr });
-
-			N[dimension]++;
 		}
 
 		// The triangle has two distinct SRART and END events.
@@ -174,8 +175,6 @@ inline void generateEvent(Triangle & triangle, vector<Event> &events, int N[3])
 		{
 			events.push_back({ smallest, dimension,	START,	ptr });
 			events.push_back({ largest,	 dimension,	END,	ptr });
-
-			N[dimension] += 2;
 		}
 	}
 }
@@ -248,14 +247,14 @@ pair<float, byte> SAH(Voxel V, Plane p, int N_l, int N_r, int N_p)
 /**
 *	Incrementally finds the best split candidate plane in O(n) time according to Wald et al Algorithm 5.
 */
-Split findPlane(int N[3], Voxel V, vector<Event> E)
+Split findPlane(int N, Voxel V, vector<Event> E)
 {
 	Split best;
 	best.cost = FLT_MAX;
 
 	int N_l[3] = { 0, 0, 0 };
 	int N_p[3] = { 0, 0, 0 };
-	int N_r[3] = { N[0], N[1], N[2] };
+	int N_r[3] = { N, N, N };
 
 	for (auto E_i = E.begin(); E_i != E.end(); )
 	{
@@ -421,7 +420,7 @@ bool terminate(vector<Triangle*> T, float C_v)
 /**
 *	Builds the tree according according to Wald et al. algorithm 1.
 */
-KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N[3])
+KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N)
 {
 	Split split = findPlane(N, V, E);
 
@@ -454,11 +453,11 @@ void build(vector<Triangle>& triangles)
 
 	Voxel scene = sceneVoxel(triangles);
 
-	int N[3] = { 0, 0, 0 };
+	int N = triangles.size();
 
 	for (int i = 0; i < triangles.size(); i++)
 	{
-		generateEvent(triangles[i], events, N);
+		generateEvent(triangles[i], events);
 	}
 
 	std::sort(events.begin(), events.end(), compareEvents);
