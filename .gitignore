@@ -274,3 +274,9 @@ xcuserdata/
 *.moved-aside
 *.xccheckout
 *.xcscmblueprint
+
+## DS_STORE
+.DS_Store
+
+# Ignore ppm files
+*.ppm

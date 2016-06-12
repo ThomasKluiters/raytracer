@@ -41,7 +41,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("mirror4.obj", true);
+	MyMesh.loadMesh("cube.obj", true);
  //   MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
@@ -161,7 +161,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 }
 
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Light l, int material) {
-	std::vector<Vec3Df> lights = l.lights(6);
+	std::vector<Vec3Df> lights = l.lights(3);
 	Vec3Df temp = Vec3Df(0, 0, 0);
 	for (int i = 0; i < lights.size(); ++i) {
 		temp = temp + lambertshading(location, normal, lights[i], material);
