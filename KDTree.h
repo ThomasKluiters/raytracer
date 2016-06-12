@@ -9,7 +9,7 @@ using namespace std;
 
 typedef unsigned char byte;
 
-const float traveralCost = 10;
+const float traveralCost = 20;
 const float triangleTestCost = 14;
 
 const byte LEFT = 0;
@@ -32,6 +32,11 @@ struct Triangle
 	float* v1;
 	float* v2;
 	float* v3;
+};
+
+struct Intersection
+{
+	float p[3];
 };
 
 /**
@@ -146,7 +151,7 @@ inline float max3(float a, float b, float c)
 *	An event is considered to be PLANAR when the triangle lies on the given dimensionsional plane. Else, two seperate
 *	events, START and END, will be generated.
 */
-inline void generateEvent(Triangle & triangle, vector<Event> &events)
+inline void generateEvents(Triangle & triangle, vector<Event> &events)
 {
 	for (byte dimension = 0; dimension < 3; dimension++)
 	{
@@ -282,7 +287,7 @@ Split findPlane(int N, Voxel V, vector<Event> E)
 		float cost = C.first;
 		byte side = C.second;
 
- 		if (best.cost > cost && dimension != 2) {
+		if (best.cost > cost && dimension != 2) {
 			best = { cost, plane, side };
 		}
 
@@ -319,6 +324,93 @@ Voxel sceneVoxel(vector<Triangle> &triangles)
 
 }
 
+inline void clamp(float * p_min, float * p_max, float * candidate)
+{
+	for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
+	{
+		p_min[dimension] = min(candidate[dimension], p_min[dimension]);
+		p_max[dimension] = max(candidate[dimension], p_max[dimension]);
+	}
+}
+
+inline void clamp(float * min_l, float * max_l, float * min_r, float * max_r, float * candidate, byte dimension, float position)
+{
+	float v = candidate[dimension];
+	if (v < position)
+	{
+		clamp(min_l, max_l, candidate);
+	}
+	else
+	{
+		clamp(min_r, max_r, candidate);
+	}
+}
+
+inline Intersection intersect(float * v1, float * v2, byte dimension, float position)
+{
+	float dot = (v2[dimension] - v1[dimension]);
+
+	float fac = -(v1[dimension] - position) / (dot);
+
+	return{ {
+			fac * (v2[X_AXIS] - v1[X_AXIS]) + v1[X_AXIS],
+			fac * (v2[Y_AXIS] - v1[Y_AXIS]) + v1[Y_AXIS],
+			fac * (v2[Z_AXIS] - v1[Z_AXIS]) + v1[Z_AXIS]
+		} };
+}
+
+
+inline void populate(float * min_l, float * max_l, float * min_r, float * max_r, float * intersection)
+{
+	clamp(min_l, max_l, intersection);
+	clamp(min_r, max_r, intersection);
+}
+
+inline void check(float * min_l, float * max_l, float * min_r, float * max_r, Triangle & triangle, float position, byte dimension, float* v1, float* v2)
+{
+	if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] < position && v2[dimension] > position))
+	{
+		float * intersection = intersect(v1, v2, dimension, position).p;
+		populate(min_l, max_l, min_r, max_r, intersection);
+	}
+}
+void clip(vector<Event> & E_bl, vector<Event> & E_br, Triangle & triangle, Plane plane)
+{
+	float position = plane.position;
+	byte dimension = plane.dimension;
+
+	float * v1 = triangle.v1;
+	float * v2 = triangle.v2;
+	float * v3 = triangle.v3;
+	
+	float min_l[3] = { FLT_MAX, FLT_MAX, FLT_MAX  };
+	float max_l[3] = { FLT_MIN, FLT_MIN, FLT_MIN - 1 };
+	
+	float min_r[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
+	float max_r[3] = { FLT_MIN, FLT_MIN, FLT_MIN - 1 };
+	
+		
+	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v1, v2);
+	clamp(min_l, max_l, min_r, max_r, v1, dimension, position);
+
+	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v2, v3);
+	clamp(min_l, max_l, min_r, max_r, v2, dimension, position);
+
+	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v3, v1);
+	clamp(min_l, max_l, min_r, max_r, v3, dimension, position);
+
+	Triangle* ptr = &triangle;
+
+	for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
+	{
+		E_bl.push_back({ min_l[dimension], dimension, START, ptr });
+		E_bl.push_back({ max_l[dimension], dimension, END, ptr });
+
+		E_br.push_back({ min_r[dimension], dimension, START, ptr });
+		E_br.push_back({ max_r[dimension], dimension, END, ptr });
+	}
+}
+
 /**
 *	Classifies the given Triangles into a left and right side of the splitting Plane.
 */
@@ -330,8 +422,11 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 	vector<Triangle*> T_l;
 	vector<Triangle*> T_r;
 
-	vector<Event> E_l;
-	vector<Event> E_r;
+	vector<Event> E_lo;
+	vector<Event> E_ro;
+
+	vector<Event> E_bl;
+	vector<Event> E_br;
 
 	unordered_map<Triangle*, byte> classifiedTriangles;
 	classifiedTriangles.reserve(T.size());
@@ -380,11 +475,25 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 
 	for (auto triangle : classifiedTriangles)
 	{
-		if (triangle.second == LEFT || triangle.second == BOTH)
+		switch (triangle.second)
+		{
+		case LEFT:
 			T_l.push_back(triangle.first);
+			break;
 
-		if (triangle.second == RIGHT || triangle.second == BOTH)
+		case RIGHT:
 			T_r.push_back(triangle.first);
+			break;
+
+		case BOTH:
+			T_l.push_back(triangle.first);
+			T_r.push_back(triangle.first);
+
+			Triangle T = (*triangle.first);
+
+			clip(E_bl, E_br, T, p.plane);
+			break;
+		}
 	}
 
 	for (auto event : E)
@@ -393,11 +502,15 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 		{
 
 		case LEFT:
-			E_l.push_back(event);
+			E_lo.push_back(event);
 			break;
 
 		case RIGHT:
-			E_r.push_back(event);
+			E_ro.push_back(event);
+			break;
+
+		case BOTH:
+			// events are discarded
 			break;
 
 		default:
@@ -406,7 +519,7 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 		}
 	}
 
-	return { T_l, T_r, E_l, E_r };
+	return { T_l, T_r, E_lo, E_ro };
 }
 
 /**
@@ -420,9 +533,9 @@ bool terminate(vector<Triangle*> T, float C_v)
 /**
 *	Builds the tree according according to Wald et al. algorithm 1.
 */
-KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N)
+KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V)
 {
-	Split split = findPlane(N, V, E);
+	Split split = findPlane(T.size(), V, E);
 
 	if (terminate(T, split.cost))
 	{
@@ -435,11 +548,12 @@ KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N)
 	Voxel V_l = children.first;
 	Voxel V_r = children.second;
 
+	
 	// no termination -> split into two lists of triangles and buildTree on those
 	return KDTree{
 		V,
-		&construct(classification.T_l, classification.E_l, V_l, N),
-		&construct(classification.T_r, classification.E_r, V_r, N),
+		&construct(classification.T_l, classification.E_l, V_l),
+		&construct(classification.T_r, classification.E_r, V_r),
 		vector<Triangle*>()
 	};
 }
@@ -447,20 +561,25 @@ KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V, int N)
 /** 
 *	Builds the KD tree.
 */
-void build(vector<Triangle>& triangles)
+void build(vector<Triangle> & triangles)
 {	
 	vector<Event> events;
 
 	Voxel scene = sceneVoxel(triangles);
 
-	int N = triangles.size();
-
 	for (int i = 0; i < triangles.size(); i++)
 	{
-		generateEvent(triangles[i], events);
+		generateEvents(triangles[i], events);
 	}
 
 	std::sort(events.begin(), events.end(), compareEvents);
 
-	Split split = findPlane(N, scene, events);
+	vector<Triangle*> ptrs;
+
+	for (auto triangle = triangles.begin(); triangle != triangles.end(); ++triangle)
+	{
+		ptrs.push_back(&(*triangle));
+	}
+
+	construct(ptrs, events, scene);
 }

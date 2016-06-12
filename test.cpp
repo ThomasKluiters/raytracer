@@ -33,13 +33,22 @@ int main() {
 	float t5v3[] = { 6, -3, 0 };
 	Triangle t5{ t5v1, t5v2, t5v3 };
 
+	// Triangle 6
+	float t6v1[] = { -1, -1, 0 };
+	float t6v2[] = {  1, -1, 0 };
+	float t6v3[] = {  0,  3, 0 };
+	Triangle t6{ t6v1, t6v2, t6v3 };
+
 	triangles.push_back(t1);
 	triangles.push_back(t2);
 	triangles.push_back(t3);
 	triangles.push_back(t4);
 	triangles.push_back(t5);
 
-	int k;
-	
-	build(triangles);	
+
+	vector<Event> E_br;
+	vector<Event> E_bl;
+
+	clip(E_bl, E_br, t6, { 0.5,0 });
+
 }
