@@ -55,7 +55,7 @@ struct Voxel
 			tmax = min(tmax, max(t1, t2));
 		}
 
-		return tmax > max(tmin, 0.0);
+		return tmax > max(tmin, 0.0f);
 	}
 
 };
@@ -66,11 +66,17 @@ struct Intersection
 
 	Vec3Df origin;
 
-	Vec3Df direciton;
+	Vec3Df direction;
 
 	Vec3Df position;
 
 	const Triangle* triangle;
+
+	bool hit()
+	{
+		return distance < FLT_MAX;
+	}
+
 };
 
 
@@ -86,6 +92,15 @@ struct KDTree
 	bool isLeaf()
 	{
 		return left == NULL && right == NULL;
+	}
+
+	Intersection trace(const Vec3Df & origin, const Vec3Df & direction, vector<Triangle> & triangles, vector<Vertex> & vertices)
+	{
+		Intersection intersection;
+		intersection.origin = origin;
+		intersection.direction = direction;
+		intersection.distance = FLT_MAX;
+		return intersection;
 	}
 
 	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
