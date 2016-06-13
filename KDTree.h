@@ -1,20 +1,28 @@
 #pragma once
 
+#include "Vec3D.h"
+#include "mesh.h";
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <algorithm>
 #include <mutex>
+
+#define min3(x, y, z) min(x, min(y, z))
+#define max3(x, y, z) max(x, max(y, z))
 
 using namespace std;
 
 typedef unsigned char byte;
 
-const float traveralCost = 50;
+const float traveralCost = 100;
 const float triangleTestCost = 14;
 
 const byte LEFT = 0;
 const byte RIGHT = 1;
 const byte BOTH = 2;
+
+const byte MIDDLE = 2;
 
 const byte END = 0;
 const byte PLANAR = 1;
@@ -24,29 +32,90 @@ const byte X_AXIS = 0;
 const byte Y_AXIS = 1;
 const byte Z_AXIS = 2;
 
-/**
-*	A Triangle with 3 arrays representing vertices.
-*/
-struct Triangle
-{
-	float* v1;
-	float* v2;
-	float* v3;
-};
-
-struct Intersection
-{
-	float p[3];
-};
+vector<Vec3Df> vertices;
+vector<Triangle> triangles;
 
 /**
 *	A rectangular prism in space representing a region of the scene.
 */
 struct Voxel
 {
-	float min[3];
-	float max[3];
+	Vec3Df v_min;
+	Vec3Df v_max;
+
+	inline bool intersects(const Vec3Df & origin, const Vec3Df & dir)
+	{
+		float tmin = FLT_MAX;
+		float tmax =-FLT_MAX;
+
+		for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
+		{
+			float t1 =  (v_min[dimension] - origin[dimension]) / dir[dimension];
+			float t2 = (v_max[dimension] - origin[dimension]) / dir[dimension];
+
+			tmin = min3(tmin, t1, t2);
+			tmax = max3(tmax, t1, t2);
+		}
+
+		return tmax > max(tmin, 0.0f);
+	}
+
 };
+
+struct Intersection
+{
+	float distance;
+
+	Vec3Df origin;
+
+	Vec3Df direciton;
+
+	Vec3Df position;
+
+	const Triangle* triangle;
+};
+
+void mollerIntersection(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, const Triangle & triangle)
+{
+	Vec3Df v0 = vertices[triangle.v[0]];
+	Vec3Df v1 = vertices[triangle.v[1]];
+	Vec3Df v2 = vertices[triangle.v[2]];
+
+	Vec3Df S_1 = v1 - v0;
+	Vec3Df S_2 = v2 - v0;
+
+	Vec3Df P = Vec3Df::crossProduct(direction, S_2);
+
+	float determinant = Vec3Df::dotProduct(P, S_1);
+
+	if (determinant > FLT_EPSILON && determinant < FLT_EPSILON)
+		return;
+
+	float inverse = 1 / determinant;
+
+	Vec3Df T = (origin - v0);
+
+	float u = Vec3Df::dotProduct(T, P) * inverse;
+
+	if (u < 0 || u > 1)
+		return;
+
+	Vec3Df Q = Vec3Df::crossProduct(T, S_1);
+
+	float v = Vec3Df::dotProduct(direction, Q) * inverse;
+
+	if (v < 0 || u + v > 1)
+		return;
+
+	float t = Vec3Df::dotProduct(S_2, Q) * inverse;
+
+	if (t > FLT_EPSILON && t < intersection.distance)
+	{
+		intersection.distance = t;
+		intersection.position = origin + t * direction;
+		intersection.triangle = &triangle;
+	}
+}
 
 
 struct KDTree
@@ -56,13 +125,38 @@ struct KDTree
 	KDTree* left;
 	KDTree* right;
 
-	vector<Triangle*> triangles;
+	vector<int> indices;
 
 	bool isLeaf()
 	{
 		return left == NULL && right == NULL;
 	}
+
+	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection)
+	{
+		if (isLeaf())
+		{
+			for (auto index : indices)
+			{
+				Triangle triangle = triangles[index];
+				mollerIntersection(origin, direction, intersection, triangle);
+			}
+		}
+		else
+		{
+			if (left && left->voxel.intersects(origin, direction))
+			{
+				left->trace(origin, direction, intersection);
+			}
+			if (right && right->voxel.intersects(origin, direction))
+			{
+				right->trace(origin, direction, intersection);
+			}
+		}
+	}
+
 };
+
 
 /**
 *	Represents a plane in the given position and in the given dimension .
@@ -100,7 +194,7 @@ struct Event
 	byte type;
 
 	// A reference to the triangle this Event belongs to
-	Triangle* triangle;
+	int triangle;
 };
 
 
@@ -109,8 +203,17 @@ struct Event
 */
 struct Classification
 {
-	vector<Triangle*> T_l;
-	vector<Triangle*> T_r;
+
+	Classification(vector<int> T_l, vector<int> T_r, vector<Event> E_l, vector<Event> E_r)
+	{
+		this->T_l = T_l;
+		this->T_r = T_r;
+		this->E_l = E_l;
+		this->E_r = E_r;
+	}
+
+	vector<int> T_l;
+	vector<int> T_r;
 
 	vector<Event> E_l;
 	vector<Event> E_r;
@@ -127,27 +230,6 @@ inline bool compareEvents(const Event &a, const Event &b)
 		(a.position == b.position && a.dimension <  b.dimension) ||
 		(a.position == b.position && a.dimension == b.dimension && a.type < b.type);
 }
-
-/**
-*	Returns the lowest of three floats.
-*/
-inline float min3(float a, float b, float c)
-{
-	if (a <= b && a <= c)	return a;
-	if (b <= a && b <= c)	return b;
-	return c;
-}
-
-/**
-*	Returns the highest of three floats.
-*/
-inline float max3(float a, float b, float c)
-{
-	if (a >= b && a >= c)	return a;
-	if (b >= a && b >= c)	return b;
-	return c;
-}
-
 /**
 *	Generates an event based on the triangle's vertices. The Event that is generated will be added to the given Vector 
 *	of events.
@@ -155,35 +237,35 @@ inline float max3(float a, float b, float c)
 *	An event is considered to be PLANAR when the triangle lies on the given dimensionsional plane. Else, two seperate
 *	events, START and END, will be generated.
 */
-inline void generateEvents(Triangle & triangle, vector<Event> &events)
+inline void generateEvents(int index, vector<Event> &events)
 {
+	Triangle & triangle = triangles[index];
 	for (byte dimension = 0; dimension < 3; dimension++)
 	{
-		Triangle* ptr = &triangle;
 
 		float smallest = min3(
-			triangle.v1[dimension],
-			triangle.v2[dimension],
-			triangle.v3[dimension]
+			vertices[triangle.v[0]][dimension],
+			vertices[triangle.v[1]][dimension],
+			vertices[triangle.v[2]][dimension]
 		);
 
 		float largest = max3(
-			triangle.v1[dimension],
-			triangle.v2[dimension],
-			triangle.v3[dimension]
+			vertices[triangle.v[0]][dimension],
+			vertices[triangle.v[1]][dimension],
+			vertices[triangle.v[2]][dimension]
 		);
 		
 		// The event is PLANAR.
 		if (smallest == largest)
 		{
-			events.push_back({ smallest, dimension, PLANAR, ptr });
+			events.push_back({ smallest, dimension, PLANAR, index });
 		}
 
 		// The triangle has two distinct SRART and END events.
 		else
 		{
-			events.push_back({ smallest, dimension,	START,	ptr });
-			events.push_back({ largest,	 dimension,	END,	ptr });
+			events.push_back({ smallest, dimension,	START,	index });
+			events.push_back({ largest,	 dimension,	END,	index});
 		}
 	}
 }
@@ -212,10 +294,10 @@ float C(float P_l, float P_r, int N_l, int N_r)
 pair<Voxel, Voxel> splitBox(Voxel voxel, Plane plane)
 {
 	Voxel V_l = voxel;
-	V_l.max[plane.dimension] = plane.position;
+	V_l.v_max[plane.dimension] = plane.position;
 
 	Voxel V_r = voxel;
-	V_r.min[plane.dimension] = plane.position;
+	V_r.v_min[plane.dimension] = plane.position;
 
 	return make_pair(V_l, V_r);
 }
@@ -226,12 +308,12 @@ pair<Voxel, Voxel> splitBox(Voxel voxel, Plane plane)
 float SA(Voxel voxel)
 {
 	float lengths[3] = {
-		voxel.max[0] - voxel.min[0],
-		voxel.max[1] - voxel.min[1],
-		voxel.max[2] - voxel.min[2]
+		voxel.v_max[0] - voxel.v_min[0],
+		voxel.v_max[1] - voxel.v_min[1],
+		voxel.v_max[2] - voxel.v_min[2]
 	};
 
-	return 2 * (lengths[0] * lengths[1] + lengths[1] * lengths[2] + lengths[2] * lengths[0]);
+	return 2 * (abs(lengths[0] * lengths[1]) + abs(lengths[1] * lengths[2]) + abs(lengths[2] * lengths[0]));
 }
 
 /**
@@ -278,7 +360,7 @@ Split findPlane(int N, Voxel V, vector<Event> E)
 				&& E_i->type == type
 				&& E_i->position == plane.position)
 			{
-				E_i++;
+				++E_i;
 				p[type]++;
 			}
 		}
@@ -306,21 +388,31 @@ Split findPlane(int N, Voxel V, vector<Event> E)
 Voxel sceneVoxel(vector<Triangle> &triangles)
 {
 	Voxel voxel;
+
 	for (int i = 0; i < 3; i++) {
-		voxel.max[i] = triangles[0].v1[i];
-		voxel.min[i] = triangles[0].v1[i];
+		voxel.v_max[i] = -FLT_MAX;
+		voxel.v_min[i] =  FLT_MAX;
 	}
 
 
 	for (auto triangle = triangles.begin(); triangle != triangles.end(); ++triangle)
 	{
-		for (int i = 0; i < 3; i++)
+		for (int dimension = 0; dimension < 3; dimension++)
 		{
-			float smallest = min3(triangle->v1[i], triangle->v2[i], triangle->v3[i]);
-			float largest = max3(triangle->v1[i], triangle->v2[i], triangle->v3[i]);
+			float smallest = min3(
+				vertices[triangle->v[0]][dimension],
+				vertices[triangle->v[1]][dimension],
+				vertices[triangle->v[2]][dimension]
+			);
 
-			voxel.max[i] = max(largest, voxel.max[i]);
-			voxel.min[i] = min(smallest, voxel.min[i]);
+			float largest = max3(
+				vertices[triangle->v[0]][dimension],
+				vertices[triangle->v[1]][dimension],
+				vertices[triangle->v[2]][dimension]
+			);
+
+			voxel.v_max[dimension] = max(largest, voxel.v_max[dimension]);
+			voxel.v_min[dimension] = min(smallest, voxel.v_min[dimension]);
 		}
 	}
 
@@ -328,7 +420,7 @@ Voxel sceneVoxel(vector<Triangle> &triangles)
 
 }
 
-inline void clamp(float * p_min, float * p_max, float * candidate)
+inline void clamp(Vec3Df & p_min, Vec3Df & p_max, Vec3Df & candidate)
 {
 	for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
 	{
@@ -337,7 +429,7 @@ inline void clamp(float * p_min, float * p_max, float * candidate)
 	}
 }
 
-inline void clamp(float * min_l, float * max_l, float * min_r, float * max_r, float * candidate, byte dimension, float position)
+inline void clamp(Vec3Df & min_l, Vec3Df & max_l, Vec3Df & min_r, Vec3Df & max_r, Vec3Df & candidate, byte dimension, float position)
 {
 	float v = candidate[dimension];
 	if (v < position)
@@ -350,48 +442,50 @@ inline void clamp(float * min_l, float * max_l, float * min_r, float * max_r, fl
 	}
 }
 
-inline Intersection intersect(float * v1, float * v2, byte dimension, float position)
+inline Vec3Df intersect(Vec3Df & v1, Vec3Df & v2, byte dimension, float position)
 {
 	float dot = (v2[dimension] - v1[dimension]);
 
 	float fac = -(v1[dimension] - position) / (dot);
 
-	return{ {
-			fac * (v2[X_AXIS] - v1[X_AXIS]) + v1[X_AXIS],
-			fac * (v2[Y_AXIS] - v1[Y_AXIS]) + v1[Y_AXIS],
-			fac * (v2[Z_AXIS] - v1[Z_AXIS]) + v1[Z_AXIS]
-		} };
+	return Vec3Df(
+		fac * (v2[X_AXIS] - v1[X_AXIS]) + v1[X_AXIS],
+		fac * (v2[Y_AXIS] - v1[Y_AXIS]) + v1[Y_AXIS],
+		fac * (v2[Z_AXIS] - v1[Z_AXIS]) + v1[Z_AXIS]
+	);
 }
 
 
-inline void populate(float * min_l, float * max_l, float * min_r, float * max_r, float * intersection)
+inline void populate(Vec3Df & min_l, Vec3Df & max_l, Vec3Df & min_r, Vec3Df & max_r, Vec3Df & intersection)
 {
 	clamp(min_l, max_l, intersection);
 	clamp(min_r, max_r, intersection);
 }
 
-inline void check(float * min_l, float * max_l, float * min_r, float * max_r, float position, byte dimension, float* v1, float* v2)
+inline void check(Vec3Df & min_l, Vec3Df & max_l, Vec3Df & min_r, Vec3Df & max_r, float position, byte dimension, Vec3Df & v1, Vec3Df & v2)
 {
 	if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] < position && v2[dimension] > position))
 	{
-		float * intersection = intersect(v1, v2, dimension, position).p;
+		Vec3Df intersection = intersect(v1, v2, dimension, position).p;
 		populate(min_l, max_l, min_r, max_r, intersection);
 	}
 }
-void clip(vector<Event> & E_bl, vector<Event> & E_br, Triangle* triangle, Plane plane)
+void clip(vector<Event> & E_bl, vector<Event> & E_br, int index, Plane plane)
 {
+	Triangle & triangle = triangles[index];
+
 	float position = plane.position;
 	byte dimension = plane.dimension;
 
-	float * v1 = triangle->v1;
-	float * v2 = triangle->v2;
-	float * v3 = triangle->v3;
+	Vec3Df & v1 = vertices[triangle.v[0]];
+	Vec3Df & v2 = vertices[triangle.v[1]];
+	Vec3Df & v3 = vertices[triangle.v[2]];
 	
-	float min_l[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
-	float max_l[3] = {-FLT_MAX,-FLT_MAX,-FLT_MAX };
-	
-	float min_r[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
-	float max_r[3] = {-FLT_MAX,-FLT_MAX,-FLT_MAX };
+	Vec3Df min_l( FLT_MAX, FLT_MAX, FLT_MAX);
+	Vec3Df max_l(-FLT_MAX,-FLT_MAX,-FLT_MAX);
+
+	Vec3Df min_r( FLT_MAX, FLT_MAX, FLT_MAX );
+	Vec3Df max_r(-FLT_MAX,-FLT_MAX,-FLT_MAX );
 	
 		
 	check(min_l, max_l, min_r, max_r, position, dimension, v1, v2);
@@ -405,24 +499,26 @@ void clip(vector<Event> & E_bl, vector<Event> & E_br, Triangle* triangle, Plane 
 
 	for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
 	{
-		E_bl.push_back({ min_l[dimension], dimension, START, triangle });
-		E_bl.push_back({ max_l[dimension], dimension, END, triangle });
+		E_bl.push_back({ min_l[dimension], dimension, START, index });
+		E_bl.push_back({ max_l[dimension], dimension, END, index });
 
-		E_br.push_back({ min_r[dimension], dimension, START, triangle });
-		E_br.push_back({ max_r[dimension], dimension, END, triangle });
+		E_br.push_back({ min_r[dimension], dimension, START, index });
+		E_br.push_back({ max_r[dimension], dimension, END, index });
 	}
 }
+
+int n = 0;
 
 /**
 *	Classifies the given Triangles into a left and right side of the splitting Plane.
 */
-Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
+Classification classify(vector<int> & T, vector<Event> & E, Split p)
 {
 	byte planeDimension = p.plane.dimension;
 	float planePosition = p.plane.position;
 
-	vector<Triangle*> T_l;
-	vector<Triangle*> T_r;
+	vector<int> T_l;
+	vector<int> T_r;
 
 	vector<Event> E_lo;
 	vector<Event> E_ro;
@@ -434,9 +530,10 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 	vector<Event> E_r;
 
 
-	unordered_map<Triangle*, byte> classifiedTriangles;
+	unordered_map<int, byte> classifiedTriangles;
 	classifiedTriangles.reserve(T.size());
 
+	
 	for (auto triangle = T.begin(); triangle != T.end(); ++triangle)
 	{
 		classifiedTriangles[(*triangle)] = BOTH;
@@ -500,8 +597,8 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 		}
 	}
 
-	sort(E_bl.begin(), E_bl.end(), compareEvents);
-	sort(E_br.begin(), E_br.end(), compareEvents);
+	std::sort(E_bl.begin(), E_bl.end(), compareEvents);
+	std::sort(E_br.begin(), E_br.end(), compareEvents);
 
 	for (auto event : E)
 	{
@@ -527,20 +624,18 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 	}
 	
 	E_l.resize(E_lo.size() + E_bl.size());
-	
-	merge(E_lo.begin(), E_lo.end(), E_bl.begin(), E_bl.end(), E_l.begin(), compareEvents);
+	std::merge(E_lo.begin(), E_lo.end(), E_bl.begin(), E_bl.end(), E_l.begin(), compareEvents);
 
 	E_r.resize(E_ro.size() + E_br.size());
-	merge(E_ro.begin(), E_ro.end(), E_br.begin(), E_br.end(), E_r.begin(), compareEvents);
-
-
-	return { T_l, T_r, E_l, E_r };
+	std::merge(E_ro.begin(), E_ro.end(), E_br.begin(), E_br.end(), E_r.begin(), compareEvents);
+	
+	return Classification(T_l, T_r, E_l, E_r);
 }
 
 /**
 *	Implements the Termiante function according to Wald et al. function (6).
 */
-bool terminate(vector<Triangle*> T, float C_v)
+bool terminate(vector<int> T, float C_v)
 {
 	return (T.size() * triangleTestCost * 0.8) <= C_v;
 }
@@ -548,13 +643,13 @@ bool terminate(vector<Triangle*> T, float C_v)
 /**
 *	Builds the tree according according to Wald et al. algorithm 1.
 */
-KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel & V)
+KDTree* construct(vector<int> T, vector<Event> & E, Voxel & V)
 {
 	Split split = findPlane(T.size(), V, E);
 
 	if (terminate(T, split.cost))
 	{
-		return KDTree{ V, NULL, NULL, T };
+		return new KDTree{ V, NULL, NULL, T };
 	}
 
 	Classification classification = classify(T, E, split);
@@ -562,38 +657,56 @@ KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel & V)
 	pair<Voxel, Voxel> children = splitBox(V, split.plane);
 	
 	// no termination -> split into two lists of triangles and buildTree on those
-	return KDTree{
+	return new KDTree{
 		V,
-		&construct(classification.T_l, classification.E_l, children.first),
-		&construct(classification.T_r, classification.E_r, children.second),
-		vector<Triangle*>()
+		classification.T_l.size() == 0 ? NULL : construct(classification.T_l, classification.E_l, children.first),
+		classification.T_r.size() == 0 ? NULL : construct(classification.T_r, classification.E_r, children.second),
+		vector<int>()
 	};
 }
+
+
 
 /** 
 *	Builds the KD tree.
 */
-void build(vector<Triangle> & triangles)
+KDTree* build(Mesh mesh)
 {	
+	printf("#### KD-tree generation - File\n");
+	printf("Loading file...\n");
+
+	triangles = mesh.triangles;
+	vector<int> initial;
+	
+	for (auto vertex : mesh.vertices)
+	{
+		vertices.push_back(vertex.p);
+	}
+
+	printf("Done...\n");
+	printf("#### KD-tree generation - Events\n");
+
 	vector<Event> events;
 
 	Voxel scene = sceneVoxel(triangles);
 
 	for (int i = 0; i < triangles.size(); i++)
 	{
-		generateEvents(triangles[i], events);
+		generateEvents(i, events);
+		initial.push_back(i);
 	}
 
 	std::sort(events.begin(), events.end(), compareEvents);
-
-	vector<Triangle*> ptrs;
-
-	for (auto triangle = triangles.begin(); triangle != triangles.end(); ++triangle)
-	{
-		ptrs.push_back(&(*triangle));
-	}
+	
+	printf("Done...\n");
 
 	printf("Events generated.\n");
 
-	construct(ptrs, events, scene);
+	printf("#### KD-tree generation - Construction\n");
+
+	KDTree* tree = construct(initial, events, scene);
+
+	printf("Done...\n");
+
+	return tree;
 }
