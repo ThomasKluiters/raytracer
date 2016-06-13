@@ -100,7 +100,10 @@ struct KDTree
 		intersection.origin = origin;
 		intersection.direction = direction;
 		intersection.distance = FLT_MAX;
-		return trace(origin, direction, triangles, vertices);
+
+		trace(origin, direction, intersection, triangles, vertices);
+
+		return intersection;
 	}
 
 	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
@@ -120,7 +123,7 @@ struct KDTree
 
 				Vec3Df P = Vec3Df::crossProduct(direction, e2);
 
-				float determinant = Vec3Df::dotProduct(P, e1);
+				register float determinant = Vec3Df::dotProduct(P, e1);
 
 				if (determinant > -FLT_EPSILON && determinant < FLT_EPSILON)
 					continue;
