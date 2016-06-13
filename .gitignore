@@ -275,4 +275,12 @@ xcuserdata/
 *.xccheckout
 *.xcscmblueprint
 
+<<<<<<< HEAD
 test.cpp
+=======
+## DS_STORE
+.DS_Store
+
+# Ignore ppm files
+*.ppm
+>>>>>>> 6db674d037ae725fe0b4c07af000585864dabab3

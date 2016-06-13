@@ -7,6 +7,57 @@
 #include <string>
 
 
+
+class Light
+{
+public:
+	Light() {};
+
+	Light(Vec3Df a, Vec3Df b, Vec3Df c) {
+		p1 = a;
+		p2 = b;
+		p3 = c;
+		v1 = b - a;
+		v2 = c - a;
+	};
+
+	void create(Vec3Df normal, Vec3Df origin) {
+
+		v1 = Vec3Df(1, normal[0] / normal[1], 0);
+		v1.normalize();
+		v2 = Vec3Df::crossProduct(normal,v1);
+
+		p1 = origin;
+		p2 = origin + v1;
+		p3 = origin + v2;
+
+
+	}
+	
+	std::vector<Vec3Df> lights(int sides) {
+		
+		std::vector<Vec3Df> lights;
+		float partition = 1.0f / sides;
+		for (int i = 0; i < sides; ++i) {
+			for (int j = 0; j < sides; ++j) {
+				double r1 = ((double)rand() / (RAND_MAX));
+				double r2 = ((double)rand() / (RAND_MAX));
+				float x = partition * (i + r1);
+				float y = partition * (j + r2);
+				lights.push_back(p1 + x * v1 + y * v2);
+			}
+		}
+		return lights;
+	}
+	
+
+private:
+	Vec3Df p1, p2, p3;
+	Vec3Df v1, v2;
+
+};
+
+
 //Material class of the mesh
 //while colors seem useful, also texture names are loaded
 //texture coordinates are also supported, 
