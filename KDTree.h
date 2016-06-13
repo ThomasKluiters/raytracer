@@ -100,7 +100,7 @@ struct KDTree
 		intersection.origin = origin;
 		intersection.direction = direction;
 		intersection.distance = FLT_MAX;
-		return intersection;
+		return trace(origin, direction, triangles, vertices);
 	}
 
 	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
