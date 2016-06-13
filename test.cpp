@@ -1,4 +1,6 @@
 #include "KDTree.h"
+#include <chrono>
+#include <random>
 
 int main() {
 	vector<Triangle> triangles;
@@ -39,16 +41,51 @@ int main() {
 	float t6v3[] = {  0,  3, 0 };
 	Triangle t6{ t6v1, t6v2, t6v3 };
 
-	triangles.push_back(t1);
-	triangles.push_back(t2);
-	triangles.push_back(t3);
-	triangles.push_back(t4);
-	triangles.push_back(t5);
+	//triangles.push_back(t1);
+	//triangles.push_back(t2);
+	//triangles.push_back(t3);
+	//triangles.push_back(t4);
+	//triangles.push_back(t5);
 
+	triangles.reserve(10000);
 
-	vector<Event> E_br;
-	vector<Event> E_bl;
+	std::default_random_engine generator;
+	std::normal_distribution<float> distribution(0.0, 3.0);
 
-	clip(E_bl, E_br, t6, { 0.5,0 });
+	std::normal_distribution<float> small_distribution(0.0, 0.1);
 
+	for (int i = 0; i < 10000; i++)
+	{
+		float* v1 = new float[3];
+		float* v2 = new float[3];
+		float* v3 = new float[3];
+		
+		float o = distribution(generator);
+
+		v1[0] = small_distribution(generator) + o;
+		v2[0] = small_distribution(generator) + o;
+		v3[0] = small_distribution(generator) + o;
+
+		for (int i = 1; i < 3; i++)
+		{
+			v1[i] = small_distribution(generator) + v1[i - 1];
+			v2[i] = small_distribution(generator) + v2[i - 1];
+			v3[i] = small_distribution(generator) + v3[i - 1];
+		}
+
+		triangles.push_back({ v1, v2, v3 });
+	}
+
+	printf("Done creating triangles.\n");
+
+	auto start = chrono::high_resolution_clock::now();
+
+	build(triangles);
+
+	auto end =   chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double> diff = end - start;
+
+	printf("Done in %fs\n", diff.count());
+	getchar();
 }

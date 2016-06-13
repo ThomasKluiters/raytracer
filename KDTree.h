@@ -9,7 +9,7 @@ using namespace std;
 
 typedef unsigned char byte;
 
-const float traveralCost = 20;
+const float traveralCost = 50;
 const float triangleTestCost = 14;
 
 const byte LEFT = 0;
@@ -79,9 +79,13 @@ struct Plane
 struct Split
 {
 	float cost;
+
 	Plane plane;
+
 	byte side;
-	int N[3];
+
+	int N_l;
+	int N_r;
 };
 
 struct Event
@@ -287,8 +291,8 @@ Split findPlane(int N, Voxel V, vector<Event> E)
 		float cost = C.first;
 		byte side = C.second;
 
-		if (best.cost > cost && dimension != 2) {
-			best = { cost, plane, side };
+		if (best.cost > cost) {
+			best = { cost, plane, side, N_l[dimension], N_r[dimension] };
 		}
 
 		N_l[plane.dimension] += p[START];
@@ -366,7 +370,7 @@ inline void populate(float * min_l, float * max_l, float * min_r, float * max_r,
 	clamp(min_r, max_r, intersection);
 }
 
-inline void check(float * min_l, float * max_l, float * min_r, float * max_r, Triangle & triangle, float position, byte dimension, float* v1, float* v2)
+inline void check(float * min_l, float * max_l, float * min_r, float * max_r, float position, byte dimension, float* v1, float* v2)
 {
 	if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] < position && v2[dimension] > position))
 	{
@@ -374,40 +378,38 @@ inline void check(float * min_l, float * max_l, float * min_r, float * max_r, Tr
 		populate(min_l, max_l, min_r, max_r, intersection);
 	}
 }
-void clip(vector<Event> & E_bl, vector<Event> & E_br, Triangle & triangle, Plane plane)
+void clip(vector<Event> & E_bl, vector<Event> & E_br, Triangle* triangle, Plane plane)
 {
 	float position = plane.position;
 	byte dimension = plane.dimension;
 
-	float * v1 = triangle.v1;
-	float * v2 = triangle.v2;
-	float * v3 = triangle.v3;
+	float * v1 = triangle->v1;
+	float * v2 = triangle->v2;
+	float * v3 = triangle->v3;
 	
-	float min_l[3] = { FLT_MAX, FLT_MAX, FLT_MAX  };
-	float max_l[3] = { FLT_MIN, FLT_MIN, FLT_MIN - 1 };
+	float min_l[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
+	float max_l[3] = {-FLT_MAX,-FLT_MAX,-FLT_MAX };
 	
 	float min_r[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
-	float max_r[3] = { FLT_MIN, FLT_MIN, FLT_MIN - 1 };
+	float max_r[3] = {-FLT_MAX,-FLT_MAX,-FLT_MAX };
 	
 		
-	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v1, v2);
+	check(min_l, max_l, min_r, max_r, position, dimension, v1, v2);
 	clamp(min_l, max_l, min_r, max_r, v1, dimension, position);
 
-	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v2, v3);
+	check(min_l, max_l, min_r, max_r, position, dimension, v2, v3);
 	clamp(min_l, max_l, min_r, max_r, v2, dimension, position);
 
-	check(min_l, max_l, min_r, max_r, triangle, position, dimension, v3, v1);
+	check(min_l, max_l, min_r, max_r, position, dimension, v3, v1);
 	clamp(min_l, max_l, min_r, max_r, v3, dimension, position);
-
-	Triangle* ptr = &triangle;
 
 	for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
 	{
-		E_bl.push_back({ min_l[dimension], dimension, START, ptr });
-		E_bl.push_back({ max_l[dimension], dimension, END, ptr });
+		E_bl.push_back({ min_l[dimension], dimension, START, triangle });
+		E_bl.push_back({ max_l[dimension], dimension, END, triangle });
 
-		E_br.push_back({ min_r[dimension], dimension, START, ptr });
-		E_br.push_back({ max_r[dimension], dimension, END, ptr });
+		E_br.push_back({ min_r[dimension], dimension, START, triangle });
+		E_br.push_back({ max_r[dimension], dimension, END, triangle });
 	}
 }
 
@@ -427,6 +429,10 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 
 	vector<Event> E_bl;
 	vector<Event> E_br;
+
+	vector<Event> E_l;
+	vector<Event> E_r;
+
 
 	unordered_map<Triangle*, byte> classifiedTriangles;
 	classifiedTriangles.reserve(T.size());
@@ -489,12 +495,13 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 			T_l.push_back(triangle.first);
 			T_r.push_back(triangle.first);
 
-			Triangle T = (*triangle.first);
-
-			clip(E_bl, E_br, T, p.plane);
+			clip(E_bl, E_br, triangle.first, p.plane);
 			break;
 		}
 	}
+
+	sort(E_bl.begin(), E_bl.end(), compareEvents);
+	sort(E_br.begin(), E_br.end(), compareEvents);
 
 	for (auto event : E)
 	{
@@ -518,8 +525,16 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 			break;
 		}
 	}
+	
+	E_l.resize(E_lo.size() + E_bl.size());
+	
+	merge(E_lo.begin(), E_lo.end(), E_bl.begin(), E_bl.end(), E_l.begin(), compareEvents);
 
-	return { T_l, T_r, E_lo, E_ro };
+	E_r.resize(E_ro.size() + E_br.size());
+	merge(E_ro.begin(), E_ro.end(), E_br.begin(), E_br.end(), E_r.begin(), compareEvents);
+
+
+	return { T_l, T_r, E_l, E_r };
 }
 
 /**
@@ -527,13 +542,13 @@ Classification classify(vector<Triangle*> & T, vector<Event> & E, Split p)
 */
 bool terminate(vector<Triangle*> T, float C_v)
 {
-	return T.size() * triangleTestCost < C_v;
+	return (T.size() * triangleTestCost * 0.8) <= C_v;
 }
 
 /**
 *	Builds the tree according according to Wald et al. algorithm 1.
 */
-KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V)
+KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel & V)
 {
 	Split split = findPlane(T.size(), V, E);
 
@@ -543,17 +558,14 @@ KDTree construct(vector<Triangle*> & T, vector<Event> & E, Voxel V)
 	}
 
 	Classification classification = classify(T, E, split);
-	
-	pair<Voxel, Voxel> children = splitBox(V, split.plane);
-	Voxel V_l = children.first;
-	Voxel V_r = children.second;
 
+	pair<Voxel, Voxel> children = splitBox(V, split.plane);
 	
 	// no termination -> split into two lists of triangles and buildTree on those
 	return KDTree{
 		V,
-		&construct(classification.T_l, classification.E_l, V_l),
-		&construct(classification.T_r, classification.E_r, V_r),
+		&construct(classification.T_l, classification.E_l, children.first),
+		&construct(classification.T_r, classification.E_r, children.second),
 		vector<Triangle*>()
 	};
 }
@@ -580,6 +592,8 @@ void build(vector<Triangle> & triangles)
 	{
 		ptrs.push_back(&(*triangle));
 	}
+
+	printf("Events generated.\n");
 
 	construct(ptrs, events, scene);
 }
