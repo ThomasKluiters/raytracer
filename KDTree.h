@@ -70,7 +70,9 @@ struct Intersection
 
 	Vec3Df position;
 
-	const Triangle* triangle;
+	Vec3Df normal;
+
+	int triangle;
 
 	bool hit()
 	{
@@ -102,6 +104,22 @@ struct KDTree
 		intersection.distance = FLT_MAX;
 
 		trace(origin, direction, intersection, triangles, vertices);
+
+		
+
+		if (intersection.hit())
+		{
+			const int triangle = intersection.triangle;
+
+
+			Vec3Df N(0, 0, 0);
+			for (int i = 0; i < 3; i++)
+				N += vertices[triangles[triangle].v[i]].n;
+
+			N.normalize();
+
+			intersection.normal = N;
+		}
 
 		return intersection;
 	}
@@ -146,11 +164,11 @@ struct KDTree
 
 				float t = Vec3Df::dotProduct(e2, Q) * inverse;
 
-				if (t > FLT_EPSILON)
+				if (t > FLT_EPSILON && t < intersection.distance)
 				{
 					intersection.distance = t;
 					intersection.position = origin + t * direction;
-					intersection.triangle = &triangle;
+					intersection.triangle = index;
 				}
 			}
 		}

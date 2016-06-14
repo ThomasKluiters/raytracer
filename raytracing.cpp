@@ -13,6 +13,7 @@
 #include <GL/glut.h>
 #endif
 #include "raytracing.h"
+#include "KDTree.h"
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
@@ -28,6 +29,9 @@ bool draw;
 std::vector<Light> lights;
 
 
+
+KDTree* tree;
+
 /**
 * Use this function for any preprocessing of the mesh.
 */
@@ -41,9 +45,10 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("cube.obj", true);
- //   MyMesh.loadMesh("dodgeColorTest.obj", true);
+	MyMesh.loadMesh("DavidHeadCleanMax.obj", true);
 	MyMesh.computeVertexNormals();
+
+
 
 	//one first move: initialize the first light source
 	//at least ONE light source has to be in the scene!!!
@@ -51,6 +56,9 @@ void init()
 	MyLightPositions.push_back(MyCameraPosition);
 	maxDepth = 4;
 	draw = false;
+
+	KDTreeBuilder builder(MyMesh);
+	tree = builder.build();
 }
 
 /**
@@ -59,7 +67,25 @@ void init()
 //return the color of your pixel.
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 {
-	return recursiveRaytracer(origin, dest, 1);
+	Intersection intersection = tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices);
+
+	if (!intersection.hit())
+	{
+		return Vec3Df(0, 0, 0);
+	}
+
+	const int triangle = intersection.triangle;
+
+	Vec3Df localColor = Vec3Df(0, 0.5, 0);
+	Vec3Df normal = intersection.normal;
+	Vec3Df location = intersection.position;
+	
+	for (auto light : lights)
+	{
+		localColor = localColor + softshading(location, normal, light, 0);
+	}
+
+	return localColor;
 }
 
 Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth) {
@@ -70,7 +96,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 	float newdist = 0;
 	int triangle = -1;
 	Vec3Df normalintersect, closestIntersect;
-	for (int i = 0; i<MyMesh.triangles.size(); ++i) {
+	for (int i = 0; i<MyMesh.triangles.size(); ++i) {	
 		Vec3Df Sg = MyMesh.vertices[MyMesh.triangles[i].v[0]].p;
 		Vec3Df Sone = MyMesh.vertices[MyMesh.triangles[i].v[1]].p - Sg;
 		Vec3Df Stwo = MyMesh.vertices[MyMesh.triangles[i].v[2]].p - Sg;
@@ -129,7 +155,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 		// local light values
 		Vec3Df localcolor = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ka();
 		for (int i = 0; i < lights.size(); ++i) {
-			localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], triangle);
+			localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], 0);
 		}
 		if (MyMesh.materials[MyMesh.triangleMaterials[triangle]].has_Ni() && maxDepth > depth) {
 
@@ -161,7 +187,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 }
 
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Light l, int material) {
-	std::vector<Vec3Df> lights = l.lights(3);
+	std::vector<Vec3Df> lights = l.lights(4);
 	Vec3Df temp = Vec3Df(0, 0, 0);
 	for (int i = 0; i < lights.size(); ++i) {
 		temp = temp + lambertshading(location, normal, lights[i], material);
@@ -186,49 +212,8 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df light, int material
 
 
 bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
-	Vec3Df ray = dest - origin;
-	for (int i = 0; i<MyMesh.triangles.size(); ++i) {
-		Vec3Df Sg = MyMesh.vertices[MyMesh.triangles[i].v[0]].p;
-		Vec3Df Sone = MyMesh.vertices[MyMesh.triangles[i].v[1]].p - Sg;
-		Vec3Df Stwo = MyMesh.vertices[MyMesh.triangles[i].v[2]].p - Sg;
-
-		Vec3Df normal = Vec3Df::crossProduct(Sone, Stwo);
-		normal.normalize();
-
-		float np = Vec3Df::dotProduct(ray, normal);
-
-
-		if (np != 0) {
-			float d = Vec3Df::dotProduct((Sg - origin), normal) / np;
-			if (d > 0) {
-				Vec3Df intersect = d * ray + origin;
-				Vec3Df v0 = Sone;
-				Vec3Df v1 = Stwo;
-				Vec3Df v2 = intersect - Sg;
-				//    Vector v0 = b - a, v1 = c - a, v2 = p - a;
-				float d00 = Vec3Df::dotProduct(v0, v0);
-				float d01 = Vec3Df::dotProduct(v0, v1);
-				float d11 = Vec3Df::dotProduct(v1, v1);
-				float d20 = Vec3Df::dotProduct(v2, v0);
-				float d21 = Vec3Df::dotProduct(v2, v1);
-				float denom = d00 * d11 - d01 * d01;
-				float v = (d11 * d20 - d01 * d21) / denom;
-				float w = (d00 * d21 - d01 * d20) / denom;
-				float u = 1.0f - v - w;
-				Vec3Df temp = origin - intersect;
-				float newdist = temp.getLength();
-				if (v > 0 && w > 0 && v + w <1 && newdist > 0.1) {
-					
-					drawLine(origin, intersect, Vec3Df(1, 0, 1));
-
-					return true;
-				}
-			}
-		}	
-		}
-	drawLine(origin, dest, Vec3Df(1, 0, 1));
-	return false;
-	}
+	return tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices).hit();
+}
 
 
 
