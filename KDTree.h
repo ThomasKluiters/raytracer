@@ -164,7 +164,7 @@ struct KDTree
 
 				float t = Vec3Df::dotProduct(e2, Q) * inverse;
 
-				if (t > FLT_EPSILON && t < intersection.distance)
+				if (t > 0.0001 && t < intersection.distance)
 				{
 					intersection.distance = t;
 					intersection.position = origin + t * direction;
@@ -190,8 +190,6 @@ struct KDTree
 
 class KDTreeBuilder
 {
-
-
 	Mesh mesh;
 
 	vector<Vertex> & vertices;

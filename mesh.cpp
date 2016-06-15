@@ -199,7 +199,9 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
 		else if (strncmp(s, "v ", 2) == 0)
 		{
 			sscanf(s, "v %f %f %f", &x, &y, &z);
-			vertices.push_back(Vec3Df(x, y, z));
+			Vec3Df v(x, y, z);
+			
+			vertices.push_back(v * 0.2f);
 		}
 
 		// texture coord
@@ -333,6 +335,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
 		}
 		memset(&s, 0, LINE_LEN);
 	}
+
 	fclose(in);
 	return true;
 }

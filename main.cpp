@@ -37,8 +37,8 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 800;	// X-resolution
-unsigned int WindowSize_Y = 800;	// Y-resolution
+unsigned int WindowSize_X = 1440;	// X-resolution
+unsigned int WindowSize_Y = 900;	// Y-resolution
 
 #define NUM_THREADS 16              // Max number of threads
 

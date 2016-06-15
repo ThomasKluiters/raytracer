@@ -45,10 +45,8 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("DavidHeadCleanMax.obj", true);
+	MyMesh.loadMesh("David.obj", true);
 	MyMesh.computeVertexNormals();
-
-
 
 	//one first move: initialize the first light source
 	//at least ONE light source has to be in the scene!!!
@@ -74,15 +72,17 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 		return Vec3Df(0, 0, 0);
 	}
 
+
+
 	const int triangle = intersection.triangle;
 
-	Vec3Df localColor = Vec3Df(0, 0.5, 0);
+	Vec3Df localColor = Vec3Df(0, 0, 0);
 	Vec3Df normal = intersection.normal;
 	Vec3Df location = intersection.position;
-	
+
 	for (auto light : lights)
 	{
-		localColor = localColor + softshading(location, normal, light, 0);
+		localColor = localColor + softshading(location, normal, intersection.origin, light, MyMesh.triangleMaterials[triangle]);
 	}
 
 	return localColor;
@@ -155,7 +155,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 		// local light values
 		Vec3Df localcolor = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ka();
 		for (int i = 0; i < lights.size(); ++i) {
-			localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], 0);
+			//localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], 0);
 		}
 		if (MyMesh.materials[MyMesh.triangleMaterials[triangle]].has_Ni() && maxDepth > depth) {
 
@@ -186,24 +186,42 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 	return val;
 }
 
-Vec3Df softshading(Vec3Df location, Vec3Df normal, Light l, int material) {
-	std::vector<Vec3Df> lights = l.lights(4);
+Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material) {
+	std::vector<Vec3Df> lights = l.lights(1);
 	Vec3Df temp = Vec3Df(0, 0, 0);
 	for (int i = 0; i < lights.size(); ++i) {
-		temp = temp + lambertshading(location, normal, lights[i], material);
+		temp = temp + lambertshading(location, normal, origin, lights[i], material);
 	}
 	return 1.0f / lights.size() * temp;
 }
 
 
-Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df light, int material) {
+Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material) {
 	Vec3Df light_in = light - location;
 	light_in.normalize();
 	if (!lightobstructed(location, light)) {
 		float s = Vec3Df::dotProduct(normal, light_in);
 		if (s > 0) {
-			Vec3Df value = s * MyMesh.materials[MyMesh.triangleMaterials[material]].Kd();
-			return  value;
+			Vec3Df color = s * MyMesh.materials[MyMesh.triangleMaterials[material]].Kd();
+
+			if (MyMesh.materials[MyMesh.triangleMaterials[material]].has_Ks()) {
+				Vec3Df specular = MyMesh.materials[MyMesh.triangleMaterials[material]].Ks();;
+
+				float shininess = MyMesh.materials[MyMesh.triangleMaterials[material]].Ns();
+
+				Vec3Df view = location - origin;
+				view.normalize();
+
+				Vec3Df reflection = light_in - 2 * Vec3Df::dotProduct(light_in, normal) * normal;
+				float s = Vec3Df::dotProduct(view, reflection);
+
+				if (Vec3Df::dotProduct(normal, light_in) >= 0 && s > 0)
+				{
+					color += pow(s, shininess) * specular;
+				}
+			}
+
+			return  color;
 		}
 	}
 	return Vec3Df(0, 0, 0);
