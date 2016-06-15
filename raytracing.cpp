@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -40,9 +41,9 @@ void init()
 	//PLEASE ADAPT THE LINE BELOW TO THE FULL PATH OF THE dodgeColorTest.obj
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
-	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("mirror4.obj", true);
- //   MyMesh.loadMesh("dodgeColorTest.obj", true);
+	MyMesh.loadMesh("cube.obj", true);
+	//MyMesh.loadMesh("mirror4.obj", true);
+ //  MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -128,9 +129,18 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 		drawLine(closestIntersect, (normalintersect + closestIntersect), Vec3Df(1, 0.5, 1));
 		// local light values
 		Vec3Df localcolor = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ka();
+		
+		for (int i = 0; i < MyLightPositions.size(); ++i) {
+			localcolor = localcolor + lambertshading(closestIntersect, normalintersect, MyLightPositions[i], triangle);
+
+		}
+		
+		
+		/*
 		for (int i = 0; i < lights.size(); ++i) {
 			localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], triangle);
 		}
+		*/
 		if (MyMesh.materials[MyMesh.triangleMaterials[triangle]].has_Ni() && maxDepth > depth) {
 
 			Vec3Df in = closestIntersect - origin;
@@ -138,8 +148,19 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 			in.normalize();
 			float debug = Vec3Df::dotProduct(in, normalintersect);
 			Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normalintersect) * normalintersect);
-		//	drawLine(closestIntersect, out + closestIntersect, Vec3Df(0.5, 1, 0.5));
+			Vec3Df Ray_in = closestIntersect - origin;
+			Ray_in.normalize();
+			float c = Vec3Df::dotProduct(normalintersect * -1, Ray_in);
 			Vec3Df reflection = recursiveRaytracer(closestIntersect, (closestIntersect + out), depth +1);
+			float temp = 1 - (Ni * Ni) * (1 - (c*c));
+			
+			Vec3Df refraction = Ni * Ray_in + (Ni * c * sqrt(temp))* normalintersect;
+			refraction.normalize();
+
+			float Cos_in
+			//Prl = 
+
+
 			val = Ni * reflection + (1 - Ni) * localcolor;
 		}
 		else {
@@ -378,6 +399,16 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 
 		lichtbak(rayOrigin, rayDestination);
 
+		draw = false;
+	}
+
+	if (t == 'z') {
+		draw = true;
+		for (int i = 0; i < MyMesh.vertices.size(); ++i) {
+			draw = true;
+			drawLine(MyMesh.vertices[i].p, MyMesh.vertices[i].p + MyMesh.vertices[i].n, Vec3Df(1, 0.5, 0.5));
+
+		}
 		draw = false;
 	}
 	
