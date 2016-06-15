@@ -63,6 +63,11 @@ void init()
 	draw = false;
 }
 
+Vec3Df textureMap(Vec3Df position, const int triangle)
+{
+
+}
+
 /**
 * Return the color of your pixel.
 */

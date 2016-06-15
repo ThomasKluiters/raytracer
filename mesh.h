@@ -237,7 +237,7 @@ public:
     inline Mesh (const std::vector<Vertex> & v, const std::vector<Triangle> & t) : vertices (v), triangles (t)  {}
     bool loadMesh(const char * filename, bool randomizeTriangulation);
 	bool loadMtl(const char * filename, std::map<std::string, unsigned int> & materialIndex);
-    unsigned int loadBMP(const char * imagepath);
+    Texture loadBMP(const char * imagepath);
     void computeVertexNormals ();
     void draw();
     void drawSmooth();

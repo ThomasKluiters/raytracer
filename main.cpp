@@ -19,7 +19,7 @@
 #include <ctime>
 #include <map>
 #include <numeric>
-#include <unistd.h>
+//#include <unistd.h>
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
@@ -261,7 +261,7 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
         
         std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
         
-        usleep(500000);
+  //      usleep(500000);
     }
     
     std::cout << "100 %" << std::endl;
