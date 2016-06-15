@@ -201,7 +201,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
 			sscanf(s, "v %f %f %f", &x, &y, &z);
 			Vec3Df v(x, y, z);
 			
-			vertices.push_back(v);
+			vertices.push_back(v * 0.3);
 		}
 
 		// texture coord

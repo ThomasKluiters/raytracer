@@ -104,23 +104,7 @@ struct KDTree
 		intersection.distance = FLT_MAX;
 
 		trace(origin, direction, intersection, triangles, vertices);
-
 		
-
-		if (intersection.hit())
-		{
-			const int triangle = intersection.triangle;
-
-
-			Vec3Df N(0, 0, 0);
-			for (int i = 0; i < 3; i++)
-				N += vertices[triangles[triangle].v[i]].n;
-
-			N.normalize();
-
-			intersection.normal = N;
-		}
-
 		return intersection;
 	}
 
@@ -132,9 +116,9 @@ struct KDTree
 			{
 				Triangle & triangle = triangles[index];
 
-				Vec3Df v0 = vertices[triangle.v[0]].p;
-				Vec3Df v1 = vertices[triangle.v[1]].p;
-				Vec3Df v2 = vertices[triangle.v[2]].p;
+				Vec3Df & v0 = vertices[triangle.v[0]].p;
+				Vec3Df & v1 = vertices[triangle.v[1]].p;
+				Vec3Df & v2 = vertices[triangle.v[2]].p;
 
 				Vec3Df e1 = v1 - v0;
 				Vec3Df e2 = v2 - v0;
@@ -169,6 +153,7 @@ struct KDTree
 					intersection.distance = t;
 					intersection.position = origin + t * direction;
 					intersection.triangle = index;
+					intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
 				}
 			}
 		}

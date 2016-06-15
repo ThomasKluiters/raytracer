@@ -45,7 +45,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("C:/Users/Thomas/Downloads/taylor-swift/model_mesh.obj", true);
+	MyMesh.loadMesh("C:/Users/Thomas/Downloads/stanford_dragon/dragon.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
