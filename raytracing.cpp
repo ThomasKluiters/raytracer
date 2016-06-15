@@ -33,7 +33,7 @@ std::vector<Light> lights;
 */
 void init()
 {
-	//load the mesh file
+    //load the mesh file
 	//please realize that not all OBJ files will successfully load.
 	//Nonetheless, if they come from Blender, they should, if they 
 	//are exported as WavefrontOBJ.
@@ -41,8 +41,18 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("cube.obj", true);
- //   MyMesh.loadMesh("dodgeColorTest.obj", true);
+    unsigned int texture = MyMesh.loadBMP("cgCube.bmp");
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    MyMesh.loadMesh("dodgeColorTest.obj", true);
+    glDisable(GL_TEXTURE_2D);
+    
+    //glBindTexture (GL_TEXTURE_2D, texture);
+    
+    
+    
+    //   MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
