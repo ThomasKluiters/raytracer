@@ -19,7 +19,12 @@
 #include <ctime>
 #include <map>
 #include <numeric>
+#ifdef _WIN32
+#include <io.h>
+#include <Windows.h>
+#else
 #include <unistd.h>
+#endif
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
@@ -38,8 +43,8 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 50;	// X-resolution
-unsigned int WindowSize_Y = 50;	// Y-resolution
+unsigned int WindowSize_X = 500;	// X-resolution
+unsigned int WindowSize_Y = 500;	// Y-resolution
 
 #define NUM_THREADS 18              // Max number of threads
 #define NUM_BLOCKS_X 6              // Number of blocks in x direction
@@ -266,7 +271,11 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
         
         std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
         
-        usleep(500000);
+#ifdef _WIN32
+		Sleep(500);
+#else
+		usleep(500000);
+#endif
     }
     
     std::cout << "100 %" << std::endl;
