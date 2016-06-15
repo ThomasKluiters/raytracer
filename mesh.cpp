@@ -201,7 +201,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
 			sscanf(s, "v %f %f %f", &x, &y, &z);
 			Vec3Df v(x, y, z);
 			
-			vertices.push_back(v * 0.2f);
+			vertices.push_back(v);
 		}
 
 		// texture coord
@@ -362,7 +362,7 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
 	while (_in && !feof(_in))
 	{
 		fgets(line, LINE_LEN, _in);
-
+		
 		if (line[0] == '#') // skip comments
 		{
 			memset(line, 0, LINE_LEN);

@@ -45,7 +45,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("David.obj", true);
+	MyMesh.loadMesh("C:/Users/Thomas/Downloads/taylor-swift/model_mesh.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -187,7 +187,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 }
 
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material) {
-	std::vector<Vec3Df> lights = l.lights(1);
+	std::vector<Vec3Df> lights = l.lights(5);
 	Vec3Df temp = Vec3Df(0, 0, 0);
 	for (int i = 0; i < lights.size(); ++i) {
 		temp = temp + lambertshading(location, normal, origin, lights[i], material);
@@ -213,11 +213,11 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 				view.normalize();
 
 				Vec3Df reflection = light_in - 2 * Vec3Df::dotProduct(light_in, normal) * normal;
-				float s = Vec3Df::dotProduct(view, reflection);
+				float z = Vec3Df::dotProduct(view, reflection);
 
-				if (Vec3Df::dotProduct(normal, light_in) >= 0 && s > 0)
+				if (Vec3Df::dotProduct(normal, light_in) >= 0 && z > 0)
 				{
-					color += pow(s, shininess) * specular;
+					color += pow(z, shininess) * specular;
 				}
 			}
 
