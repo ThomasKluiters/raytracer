@@ -87,12 +87,11 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest, int depth)
 
 	if (MyMesh.materials[material].has_Ni() && depth < 4) {
 		Vec3Df in = location - origin;
-		float Ni = 0.35f;
 		in.normalize();
 		Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
 
 		Vec3Df reflection = performRayTracing(location, (location + out), depth + 1);
-		return  Ni * reflection + (1 - Ni) * localColor;
+//		return  Ni * reflection + (1 - Ni) * localColor;
 	}
 
 
