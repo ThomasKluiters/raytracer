@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <mutex>
+#include "mmintrin.h"
 
 #define min3(x, y, z) min(x, min(y, z))
 #define max3(x, y, z) max(x, max(y, z))
@@ -116,44 +117,33 @@ struct KDTree
 			{
 				Triangle & triangle = triangles[index];
 
-				Vec3Df & v0 = vertices[triangle.v[0]].p;
-				Vec3Df & v1 = vertices[triangle.v[1]].p;
-				Vec3Df & v2 = vertices[triangle.v[2]].p;
+				Vec3Df o = origin - MyMesh.vertices[triangle.v[0]].p;
 
-				Vec3Df e1 = v1 - v0;
-				Vec3Df e2 = v2 - v0;
+				float dett = triangle.np - (o[triangle.iU] * triangle.nu + o[triangle.iV] * triangle.nv + o[triangle.iW]);
+				float det = direction[triangle.iU] * triangle.nu + direction[triangle.iV] * triangle.nv + direction[triangle.iW];
 
-				Vec3Df P = Vec3Df::crossProduct(direction, e2);
+				float Du = direction[triangle.iU] * dett - (triangle.pu - o[triangle.iU]) * det;
+				float Dv = direction[triangle.iV] * dett - (triangle.pv - o[triangle.iV]) * det;
 
-				register float determinant = Vec3Df::dotProduct(P, e1);
+				float detu = triangle.e1v * Du - triangle.e1u * Dv;
+				float detv = triangle.e0u * Dv - triangle.e0v * Du;
 
-				if (determinant > -FLT_EPSILON && determinant < FLT_EPSILON)
-					continue;
+				float tmpdet = det - detu - detv;
 
-				float inverse = 1.0f / determinant;
-
-				Vec3Df T = (origin - v0);
-
-				float u = Vec3Df::dotProduct(T, P) * inverse;
-
-				if (u < 0 || u > 1.0f)
-					continue;
-
-				Vec3Df Q = Vec3Df::crossProduct(T, e1);
-
-				float v = Vec3Df::dotProduct(direction, Q) * inverse;
-
-				if (v < 0 || u + v > 1.0f)
-					continue;
-
-				float t = Vec3Df::dotProduct(e2, Q) * inverse;
-
-				if (t > 0.0001 && t < intersection.distance)
+				if ((tmpdet >= 0 && detu >= 0 && detv >= 0) || (tmpdet < 0 && detu < 0 && detv < 0))
 				{
-					intersection.distance = t;
-					intersection.position = origin + t * direction;
-					intersection.triangle = index;
-					intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
+					float rdet = 1 / det;
+					float t = dett * rdet;
+					float ubar = detu * rdet;
+					float vbar = detv * rdet;
+
+					if (t > 0.0001 && t < intersection.distance)
+					{
+						intersection.distance = t;
+						intersection.position = origin + t * direction;
+						intersection.triangle = index;
+						intersection.normal = (1.0f - ubar - vbar) * vertices[triangle.v[0]].n + ubar * vertices[triangle.v[1]].n + vbar * vertices[triangle.v[2]].n;
+					}
 				}
 			}
 		}

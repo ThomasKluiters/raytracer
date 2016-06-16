@@ -237,8 +237,6 @@ public:
 		n = Vec3Df::crossProduct(e0, e1);
 
 		// Precompute normal data
-		// Indices
-		int iU, iV, iW;
 		int a = std::abs(n[0]), b = std::abs(n[1]), c = std::abs(n[2]);
 
 		// Manually "sort" the normal array
@@ -305,8 +303,6 @@ public:
 		e0v = iWpower * e0[iV] / n[iW];
 		e1u = iWpower * e1[iU] / n[iW];
 		e1v = iWpower * e1[iV] / n[iW];
-
-		ci = iW;
 	}
 
 	// Vertex position 
@@ -328,11 +324,14 @@ public:
 	float pu;
 	float pv;
 	// Edges data
-	int ci;
 	float e0u;
 	float e0v;
 	float e1u;
 	float e1v;
+
+	int iU;
+	int iV;
+	int iW;
 };
 
 /************************************************************
