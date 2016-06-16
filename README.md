@@ -4,7 +4,6 @@
 
 These tasks have not yet been started:
 * Implement openGL debug ()
-* Implement advanced acceleration structure (L & T)
 * Implement depth of field
 * Implement motion blur
 * Implement gaussian blur
@@ -16,7 +15,6 @@ These tasks have not yet been started:
 These tasks are in progress:
 * SIMD ray-triangle intersection (G & C)
 * Ray-triangle insersection based on Plücker coordinates  (G & C)
-* Simple AABB acceleration structure (L & T)
 * Implement specularities (G & C)
 * Implement refraction (R)
 * Implement reflection (R)
@@ -29,5 +27,7 @@ These tasks are done:
 
 * Implement soft shadows
 * Implement shadows
+* Simple AABB acceleration structure (L & T)
+* Implement advanced acceleration structure (L & T)
 * Multi-threading of the main raytracing loop (G & C)
 * Implement simple ray tracing (G, C & R)
