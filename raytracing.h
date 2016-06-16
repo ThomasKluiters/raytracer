@@ -26,7 +26,7 @@ void produceRay(int x_I, int y_I, Vec3Df & origin, Vec3Df & dest);
 
 
 //your main function to rewrite
-Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest);
+Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest, int depth);
 
 //a function to debug --- you can draw in OpenGL here
 void yourDebugDraw();
@@ -37,7 +37,6 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest);
 void clearAllLines();
 void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
-Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
 

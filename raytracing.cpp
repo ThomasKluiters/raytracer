@@ -45,7 +45,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("C:/Users/Thomas/Downloads/stanford_dragon/dragon.obj", true);
+	MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -63,7 +63,7 @@ void init()
 * Return the color of your pixel.
 */
 //return the color of your pixel.
-Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
+Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest, int depth)
 {
 	Intersection intersection = tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices);
 
@@ -80,111 +80,28 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 	Vec3Df normal = intersection.normal;
 	Vec3Df location = intersection.position;
 
+	const int material = MyMesh.triangleMaterials[triangle];
+
 	for (auto light : lights)
 	{
-		localColor = localColor + softshading(location, normal, intersection.origin, light, MyMesh.triangleMaterials[triangle]);
+		localColor = localColor + softshading(location, normal, intersection.origin, light, material);
 	}
+
+	if (MyMesh.materials[material].has_Ni() && 15 > 1) {
+		Vec3Df in = location - origin;
+		float Ni = 0.35f;
+		in.normalize();
+		float debug = Vec3Df::dotProduct(in, location);
+		Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
+
+		Vec3Df reflection = performRayTracing(location, (location + out), depth + 1);
+		return  (1 - Ni) * reflection + Ni * localColor;
+	}
+
 
 	return localColor;
 }
 
-Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth) {
-
-	Vec3Df ray = dest - origin;
-	Vec3Df val = Vec3Df(0, 0, 0);
-	float dist = -1;
-	float newdist = 0;
-	int triangle = -1;
-	Vec3Df normalintersect, closestIntersect;
-	for (int i = 0; i<MyMesh.triangles.size(); ++i) {	
-		Vec3Df Sg = MyMesh.vertices[MyMesh.triangles[i].v[0]].p;
-		Vec3Df Sone = MyMesh.vertices[MyMesh.triangles[i].v[1]].p - Sg;
-		Vec3Df Stwo = MyMesh.vertices[MyMesh.triangles[i].v[2]].p - Sg;
-
-		Vec3Df normal = Vec3Df::crossProduct(Sone, Stwo);
-		normal.normalize();
-
-		float np = Vec3Df::dotProduct(ray, normal);
-
-		//float np  = Vec3Df::dotProduct(ray, MyMesh.vertices[MyMesh.triangles[i].v[1]].n);
-
-		if (np != 0) {
-			double d = Vec3Df::dotProduct((Sg - origin), normal) / np;
-			//  float d = Vec3Df::dotProduct((Sg - origin), MyMesh.vertices[MyMesh.triangles[i].v[1]].n)/np;
-			Vec3Df intersect = d * ray + origin;
-			Vec3Df v0 = Sone;
-			Vec3Df v1 = Stwo;
-			Vec3Df v2 = intersect - Sg;
-
-
-			//    Vector v0 = b - a, v1 = c - a, v2 = p - a;
-			float d00 = Vec3Df::dotProduct(v0, v0);
-			float d01 = Vec3Df::dotProduct(v0, v1);
-			float d11 = Vec3Df::dotProduct(v1, v1);
-			float d20 = Vec3Df::dotProduct(v2, v0);
-			float d21 = Vec3Df::dotProduct(v2, v1);
-			float denom = d00 * d11 - d01 * d01;
-			float v = (d11 * d20 - d01 * d21) / denom;
-			float w = (d00 * d21 - d01 * d20) / denom;
-			float u = 1.0f - v - w;
-			if (v>0 && w > 0 && v + w <1 && d>0) {
-				Vec3Df temp = origin - intersect;
-				newdist = temp.getLength();
-				if ((newdist < dist || dist == -1.0f) && newdist > 0.1) {
-					dist = newdist;
-					triangle = i;
-					normalintersect = normal;
-					closestIntersect = intersect;
-				}
-
-				//return Vec3Df(0.4, 0, 0.6);
-			}
-
-		}
-		//return Vec3Df(1,0,0);
-		//return Vec3Df(dest[0],dest[1],dest[2]);
-	}
-	if (triangle != -1) {
-
-		//testArraystart.push_back(origin);
-		//testArrayfinish.push_back(closestIntersect);
-		//testArraycolor.push_back(Vec3Df(1, 1, 0));
-
-		drawLine(origin, closestIntersect, Vec3Df(1, 1, 0));
-		drawLine(closestIntersect, (normalintersect + closestIntersect), Vec3Df(1, 0.5, 1));
-		// local light values
-		Vec3Df localcolor = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ka();
-		for (int i = 0; i < lights.size(); ++i) {
-			//localcolor = localcolor + softshading(closestIntersect, normalintersect, lights[i], 0);
-		}
-		if (MyMesh.materials[MyMesh.triangleMaterials[triangle]].has_Ni() && maxDepth > depth) {
-
-			Vec3Df in = closestIntersect - origin;
-			float Ni = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ni();
-			in.normalize();
-			float debug = Vec3Df::dotProduct(in, normalintersect);
-			Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normalintersect) * normalintersect);
-		//	drawLine(closestIntersect, out + closestIntersect, Vec3Df(0.5, 1, 0.5));
-			Vec3Df reflection = recursiveRaytracer(closestIntersect, (closestIntersect + out), depth +1);
-			val = Ni * reflection + (1 - Ni) * localcolor;
-		}
-		else {
-			val = localcolor;
-
-		}
-
-	}
-	else {
-		drawLine(origin, dest, Vec3Df(1, 0, 0));
-	}
-
-
-
-	//	testArraystart.push_back(origin);
-	//	testArrayfinish.push_back(dest);
-	//	testArraycolor.push_back(Vec3Df(1, 0, 0));
-	return val;
-}
 
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material) {
 	std::vector<Vec3Df> lights = l.lights(5);
@@ -202,12 +119,12 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 	if (!lightobstructed(location, light)) {
 		float s = Vec3Df::dotProduct(normal, light_in);
 		if (s > 0) {
-			Vec3Df color = s * MyMesh.materials[MyMesh.triangleMaterials[material]].Kd();
+			Vec3Df color = s * MyMesh.materials[material].Kd();
 
-			if (MyMesh.materials[MyMesh.triangleMaterials[material]].has_Ks()) {
-				Vec3Df specular = MyMesh.materials[MyMesh.triangleMaterials[material]].Ks();;
+			if (MyMesh.materials[material].has_Ks()) {
+				Vec3Df specular = MyMesh.materials[material].Ks();;
 
-				float shininess = MyMesh.materials[MyMesh.triangleMaterials[material]].Ns();
+				float shininess = MyMesh.materials[material].Ns();
 
 				Vec3Df view = location - origin;
 				view.normalize();
@@ -366,7 +283,7 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	if (t == 't') {
 		clearAllLines();
 		draw = true;
-		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination);
+		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination, 1);
 		std::cout <<" traced ray for" << rayOrigin << "," << rayDestination << "," << z  << std::endl;
 		draw = false;
 	}

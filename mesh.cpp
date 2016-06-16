@@ -81,7 +81,8 @@ void Mesh::draw(){
 	for (unsigned int i = 0; i < triangles.size(); ++i)
 	{
 		unsigned int triMat = triangleMaterials.at(i);
-		Vec3Df col = this->materials.at(triMat).Kd();
+		
+		Vec3Df col = Vec3Df(0.1, 0.1,  0.1);
 		glColor3fv(col.pointer());
 		Vec3Df edge01 = vertices[triangles[i].v[1]].p - vertices[triangles[i].v[0]].p;
 		Vec3Df edge02 = vertices[triangles[i].v[2]].p - vertices[triangles[i].v[0]].p;
@@ -201,7 +202,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
 			sscanf(s, "v %f %f %f", &x, &y, &z);
 			Vec3Df v(x, y, z);
 			
-			vertices.push_back(v * 0.3);
+			vertices.push_back(v);
 		}
 
 		// texture coord

@@ -205,6 +205,7 @@ public:
 
 		int N_l;
 		int N_r;
+		int N_p;
 	};
 
 	struct Event
@@ -244,6 +245,21 @@ public:
 		vector<Event> E_r;
 	};
 
+	inline void generateEvent(vector<Event> &events, float smallest, float largest, byte dimension, int index)
+	{
+		// The event is PLANAR.
+		if (smallest == largest)
+		{
+			events.push_back({ smallest, dimension, PLANAR, index });
+		}
+
+		// The triangle has two distinct SRART and END events.
+		else
+		{
+			events.push_back({ smallest, dimension,	START,	index });
+			events.push_back({ largest,	 dimension,	END,	index });
+		}
+	}
 
 	/**
 	*	Generates an event based on the triangle's vertices. The Event that is generated will be added to the given Vector
@@ -270,20 +286,12 @@ public:
 				vertices[triangle.v[2]].p[dimension]
 			);
 
-			// The event is PLANAR.
-			if (smallest == largest)
-			{
-				events.push_back({ smallest, dimension, PLANAR, index });
-			}
 
-			// The triangle has two distinct SRART and END events.
-			else
-			{
-				events.push_back({ smallest, dimension,	START,	index });
-				events.push_back({ largest,	 dimension,	END,	index });
-			}
+			generateEvent(events, smallest, largest, dimension, index);
 		}
 	}
+
+
 
 	/**
 	*	Computes Lambda(T_l, T_r) according Wald et al equation (7).
@@ -299,7 +307,7 @@ public:
 	*/
 	float C(float P_l, float P_r, int N_l, int N_r)
 	{
-		return (traveralCost + triangleTestCost * (P_l * N_l + P_r * N_r));
+		return lambda(N_l, N_r) * (traveralCost + triangleTestCost * (P_l * N_l + P_r * N_r));
 	}
 
 
@@ -389,7 +397,7 @@ public:
 			byte side = C.second;
 
 			if (best.cost >= cost) {
-				best = { cost, plane, side, N_l[dimension], N_r[dimension] };
+				best = { cost, plane, side, N_l[dimension], N_r[dimension], N_p[dimension] };
 			}
 
 			N_l[plane.dimension] += p[START];
@@ -514,11 +522,8 @@ public:
 
 		for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
 		{
-			E_bl.push_back({ min_l[dimension], dimension, START, index });
-			E_bl.push_back({ max_l[dimension], dimension, END, index });
-
-			E_br.push_back({ min_r[dimension], dimension, START, index });
-			E_br.push_back({ max_r[dimension], dimension, END, index });
+			generateEvent(E_bl, min_l[dimension], max_l[dimension], dimension, index);
+			generateEvent(E_br, min_r[dimension], max_r[dimension], dimension, index);
 		}
 	}
 
@@ -652,15 +657,16 @@ public:
 	*/
 	bool terminate(vector<int> T, float C_v)
 	{
-		return (T.size() * triangleTestCost * 0.8) <= C_v;
+		return (T.size() * 0.8 * triangleTestCost) <= C_v;
 	}
 
 	/**
 	*	Builds the tree according according to Wald et al. algorithm 1.
 	*/
-	KDTree* construct(vector<int> T, vector<Event> & E, Voxel & V)
+	KDTree* construct(vector<int> T, vector<Event> E, Voxel & V)
 	{
 		Split split = findPlane(T.size(), V, E);
+		pair<Voxel, Voxel> children = splitBox(V, split.plane);
 
 		if (terminate(T, split.cost))
 		{
@@ -668,9 +674,7 @@ public:
 		}
 
 		Classification classification = classify(T, E, split);
-
-		pair<Voxel, Voxel> children = splitBox(V, split.plane);
-
+		
 		// no termination -> split into two lists of triangles and buildTree on those
 		return new KDTree{
 			V,

@@ -239,7 +239,7 @@ void performRaytracingYRange(unsigned int start,
             (1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
             
             // Launch raytracing for the given ray.
-            Vec3Df rgb = performRayTracing(origin, dest);
+            Vec3Df rgb = performRayTracing(origin, dest, 0);
             
             // Store the result in an image.
             result->setPixel(x, y, RGBValue(rgb[0], rgb[1], rgb[2]));
