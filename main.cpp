@@ -237,7 +237,7 @@ void performRaytracingYRange(unsigned int start,
             (1 - yscale)*(xscale*origin01 + (1 - xscale)*origin11);
             dest = yscale*(xscale*dest00 + (1 - xscale)*dest10) +
             (1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
-            
+
             // Launch raytracing for the given ray.
             Vec3Df rgb = performRayTracing(origin, dest, 0);
             

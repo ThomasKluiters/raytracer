@@ -72,30 +72,27 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest, int depth)
 		return Vec3Df(0, 0, 0);
 	}
 
-
-
 	const int triangle = intersection.triangle;
-
-	Vec3Df localColor = Vec3Df(0, 0, 0);
-	Vec3Df normal = intersection.normal;
-	Vec3Df location = intersection.position;
 
 	const int material = MyMesh.triangleMaterials[triangle];
 
+	Vec3Df normal = intersection.normal;
+	Vec3Df location = intersection.position;
+	Vec3Df localColor = MyMesh.materials[material].Ka();
+
 	for (auto light : lights)
 	{
-		localColor = localColor + softshading(location, normal, intersection.origin, light, material);
+		localColor = localColor + softshading(location, normal, origin, light, material);
 	}
 
-	if (MyMesh.materials[material].has_Ni() && 15 > 1) {
+	if (MyMesh.materials[material].has_Ni() && depth < 4) {
 		Vec3Df in = location - origin;
 		float Ni = 0.35f;
 		in.normalize();
-		float debug = Vec3Df::dotProduct(in, location);
 		Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
 
 		Vec3Df reflection = performRayTracing(location, (location + out), depth + 1);
-		return  (1 - Ni) * reflection + Ni * localColor;
+		return  Ni * reflection + (1 - Ni) * localColor;
 	}
 
 
@@ -116,7 +113,7 @@ Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int m
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material) {
 	Vec3Df light_in = light - location;
 	light_in.normalize();
-	if (!lightobstructed(location, light)) {
+	if (!lightobstructed(origin, light)) {
 		float s = Vec3Df::dotProduct(normal, light_in);
 		if (s > 0) {
 			Vec3Df color = s * MyMesh.materials[material].Kd();
@@ -132,6 +129,7 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 				Vec3Df reflection = light_in - 2 * Vec3Df::dotProduct(light_in, normal) * normal;
 				float z = Vec3Df::dotProduct(view, reflection);
 
+
 				if (Vec3Df::dotProduct(normal, light_in) >= 0 && z > 0)
 				{
 					color += pow(z, shininess) * specular;
@@ -146,8 +144,13 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 
 
 
-bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
-	return tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices).hit();
+bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest)
+{
+	Intersection intersection = tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices);
+	float distanceToLight = Vec3Df::distance(origin, dest);
+	float distanceToIntersetion = Vec3Df::distance(intersection.position, dest);
+
+	return distanceToIntersetion <= distanceToLight;
 }
 
 
@@ -284,6 +287,7 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		clearAllLines();
 		draw = true;
 		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination, 1);
+		drawLine(testRayOrigin, testRayDestination, z);
 		std::cout <<" traced ray for" << rayOrigin << "," << rayDestination << "," << z  << std::endl;
 		draw = false;
 	}
