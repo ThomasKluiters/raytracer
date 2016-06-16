@@ -306,6 +306,10 @@ void keyboard(unsigned char key, int x, int y)
             produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
             produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
             
+			for (std::vector<Triangle>::iterator triangle = MyMesh.triangles.begin(); triangle != MyMesh.triangles.end(); ++triangle) {
+				triangle->precomputeValues(MyMesh.vertices);
+			}
+
             // Starting time, used to display running time
             std::time_t startTime = std::time(nullptr);
             
