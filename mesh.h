@@ -6,7 +6,22 @@
 #include <map>
 #include <string>
 
-
+class Texture {
+    
+public:
+    int width;
+    int height;
+    
+    Vec3Df* colors;
+    
+    Vec3Df color(float x, float y)
+    {
+        int texX = (int)(x * width) % width;
+        int texY = (int)(y * height) % height;
+        
+        return colors[texX + texY * width];
+    }
+};
 
 class Light
 {

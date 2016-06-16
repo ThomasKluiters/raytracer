@@ -41,10 +41,10 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-    unsigned int texture = MyMesh.loadBMP("cgCube.bmp");
+    Texture texture = MyMesh.loadBMP("cgCube.bmp");
     glEnable(GL_TEXTURE_2D);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    //glBindTexture(GL_TEXTURE_2D, texture);
     MyMesh.loadMesh("dodgeColorTest.obj", true);
     glDisable(GL_TEXTURE_2D);
     
@@ -65,7 +65,11 @@ void init()
 
 Vec3Df textureMap(Vec3Df position, const int triangle)
 {
-
+    Vec3Df vec;
+    MyMesh.triangles[triangle];
+    
+    
+    return vec;
 }
 
 /**

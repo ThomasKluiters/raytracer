@@ -432,7 +432,6 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
 		else if (strncmp(line, "map_Kd ", 7) == 0) // map images
 		{
 			std::string t = &(line[7]);
-            cout << "yoo " << t;
 			if (!t.empty() && t[t.length() - 1] == '\n') {
 				t.erase(t.length() - 1);
 			}
@@ -474,24 +473,6 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
 }
 
 
-class Texture {
-
-public:
-	int width;
-	int height;
-
-	Vec3Df* colors;
-
-	Vec3Df color(float x, float y)
-	{
-		int texX = (int)(x * width) % width;
-		int texY = (int)(y * height) % height;
-
-		return colors[texX + texY * width];
-	}
-
-};
-
 Texture Mesh::loadBMP(const char * imagepath)
 {
 	// Data read from the header of the BMP file
@@ -505,7 +486,7 @@ Texture Mesh::loadBMP(const char * imagepath)
 
 	// Open the file
 	FILE * file = fopen("nocompress.bmp", "r");
-	if (!file) { printf("Image could not be opened\n"); return 0; }
+	if (!file) { printf("Image could not be opened\n"); return texture; }
 
 	if (fread(header, 1, 54, file) != 54) { // If not 54 bytes read : problem
 		printf("Not a correct BMP file\n");
@@ -516,10 +497,6 @@ Texture Mesh::loadBMP(const char * imagepath)
 		printf("Not a correct BMP file\n");
 		return texture;
 	}
-
-
-
-	Texture texture;
 
 	// Read ints from the byte array
 	dataPos = *(int*)&(header[0x0A]);
@@ -552,6 +529,6 @@ Texture Mesh::loadBMP(const char * imagepath)
 	//Everything is in memory now, the file can be closed
 	fclose(file);
 	free(data);
-
+    
 	return texture;
 }
