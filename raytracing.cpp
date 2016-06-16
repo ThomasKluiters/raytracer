@@ -145,6 +145,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 
 			Vec3Df in = closestIntersect - origin;
 			float Ni = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ni();
+			float Tr = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Tr();
 			in.normalize();
 			float debug = Vec3Df::dotProduct(in, normalintersect);
 			Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normalintersect) * normalintersect);
@@ -187,8 +188,8 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 			if (T < 0.00000001) {
 				T = 0;
 			}
-
-			val = R * reflection + T * localcolor;
+			val = (1-Tr) * localcolor + Tr * (R * reflection);
+		//	val = R * reflection + T * localcolor;
 		}
 		else {
 			val = localcolor;
