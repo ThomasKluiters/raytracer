@@ -41,8 +41,8 @@ void init()
 	//PLEASE ADAPT THE LINE BELOW TO THE FULL PATH OF THE dodgeColorTest.obj
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
-	MyMesh.loadMesh("cube.obj", true);
-	//MyMesh.loadMesh("mirror4.obj", true);
+	//MyMesh.loadMesh("cube.obj", true);
+	MyMesh.loadMesh("mirror4.obj", true);
  //  MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
@@ -150,18 +150,45 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 			Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normalintersect) * normalintersect);
 			Vec3Df Ray_in = closestIntersect - origin;
 			Ray_in.normalize();
-			float c = Vec3Df::dotProduct(normalintersect * -1, Ray_in);
-			Vec3Df reflection = recursiveRaytracer(closestIntersect, (closestIntersect + out), depth +1);
-			float temp = 1 - (Ni * Ni) * (1 - (c*c));
+			Vec3Df negative_normal = -1 * normalintersect;
 			
-			Vec3Df refraction = Ni * Ray_in + (Ni * c * sqrt(temp))* normalintersect;
-			refraction.normalize();
+			float R, T;
 
-			float Cos_in
-			//Prl = 
+			float c = Vec3Df::dotProduct(negative_normal, Ray_in);
+			Vec3Df reflection = recursiveRaytracer(closestIntersect, (closestIntersect + out), depth +1);
+			float temp =( 1 - (Ni * Ni) * (1 - (c*c)));
+			if (temp > 0) {
+				Vec3Df refraction = Ni * Ray_in + (Ni * c - sqrt(temp))* normalintersect;
+				refraction.normalize();
 
 
-			val = Ni * reflection + (1 - Ni) * localcolor;
+				Vec3Df inverted_ray_in = origin - closestIntersect;
+				inverted_ray_in.normalize();
+
+				float cos_in = Vec3Df::dotProduct(inverted_ray_in, normalintersect);
+				float cos_out = Vec3Df::dotProduct(refraction, negative_normal);
+
+				float Rs = pow((Ni * cos_in - cos_out) / (Ni * cos_in + cos_out), 2);
+				float Rp = pow((Ni * cos_out - cos_in) / (Ni * cos_out + cos_in), 2);
+
+				R = 0.5 * (Rs + Rp);
+				T = 1 - R;
+
+				drawLine(closestIntersect, closestIntersect + refraction, Vec3Df(1, 1, 0));
+			}
+			else {
+				R = 1;
+				T = 0;
+			}
+			if (R < 0.00000001) {
+				R = 0;
+			}
+
+			if (T < 0.00000001) {
+				T = 0;
+			}
+
+			val = R * reflection + T * localcolor;
 		}
 		else {
 			val = localcolor;
