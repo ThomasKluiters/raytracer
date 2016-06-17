@@ -262,7 +262,8 @@ void performRaytracingYRange(unsigned int start,
 					(1 - yscale)*(xscale*origin01 + (1 - xscale)*origin11);
 				dest = yscale*(xscale*dest00 + (1 - xscale)*dest10) +
 					(1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
-				rgb = performRayTracing(origin, dest, 0);
+				
+				rgb = performRayTracing(origin, dest - origin, 0);
 			}
 
             // Launch raytracing for the given ray.
