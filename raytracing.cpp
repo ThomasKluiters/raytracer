@@ -13,10 +13,12 @@
 #include <GL/glut.h>
 #endif
 #include "raytracing.h"
+#include "DebugScreen.h"
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
+DebugScreen *debugScreen;
 
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
@@ -31,8 +33,10 @@ std::vector<Light> lights;
 /**
 * Use this function for any preprocessing of the mesh.
 */
-void init()
+void init(DebugScreen *debug)
 {
+	debugScreen = debug;
+
 	//load the mesh file
 	//please realize that not all OBJ files will successfully load.
 	//Nonetheless, if they come from Blender, they should, if they 
@@ -41,7 +45,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("cube.obj", true);
+	MyMesh.loadMesh((*debugScreen).sceneData.data(), true);
  //   MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
@@ -370,7 +374,7 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 
 	if (t == 'c') {
 		clearAllLines();
-		std::cout << MyCameraPosition << std::endl;
+		(*debugScreen).toggleOverlay();
 	}
 
 	if (t == 'n') {

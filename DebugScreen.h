@@ -13,7 +13,7 @@ public:
 
 	void putString(std::string description, std::string value);
 	void putBool(std::string description, bool value);
-	void putInt(std::string description, int &value);
+	void putInt(std::string description, int value);
 	void putVector(std::string description, Vec3Df *vector);
 	void putChrono(std::string description, std::chrono::duration<double> value);
 	void putFloat(std::string description, float value);

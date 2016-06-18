@@ -29,6 +29,16 @@
 #include "mesh.h"
 #include "traqueboule.h"
 #include "imageWriter.h"
+#include "DebugScreen.h"
+
+/**
+ *  RENDERING CONSTANTS
+ */
+
+const std::string SCENE_FILE = "dodgeColorTest.obj";
+
+
+
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -42,9 +52,19 @@ Vec3Df MyCameraPosition;
  */
 std::vector<Vec3Df> MyLightPositions;
 
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
+typedef std::chrono::high_resolution_clock ProfileClock;
+typedef std::chrono::duration<double> TimeDiff;
+
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 500;	// X-resolution
+unsigned int WindowSize_X = 800;	// X-resolution
 unsigned int WindowSize_Y = 500;	// Y-resolution
+void * Debug_font = GLUT_BITMAP_9_BY_15;
+
+DebugScreen myDebugScreen = DebugScreen(SCENE_FILE, &WindowSize_X, &WindowSize_Y, Debug_font);
+
+// Only used to catch the timeDiff once.
+bool catchTime = true;
 
 #define NUM_THREADS 18              // Max number of threads
 #define NUM_BLOCKS_X 6              // Number of blocks in x direction
@@ -55,7 +75,12 @@ unsigned int WindowSize_Y = 500;	// Y-resolution
  */
 void drawFrame()
 {
-    yourDebugDraw();
+	// Updates the windowsize
+	WindowSize_X = glutGet(GLUT_WINDOW_WIDTH);
+	WindowSize_Y = glutGet(GLUT_WINDOW_HEIGHT);
+
+	yourDebugDraw();
+	myDebugScreen.drawDebugInfo();
 }
 
 
@@ -77,6 +102,9 @@ void keyboard(unsigned char key, int x, int y);
  */
 int main(int argc, char** argv)
 {
+	TimePoint start, end;
+	start = ProfileClock::now();
+
     glutInit(&argc, argv);
     
     // Set up framebuffer.
@@ -127,11 +155,28 @@ int main(int argc, char** argv)
     glutMotionFunc(tbMotionFunc);  // uses mouse
     glutIdleFunc(animate);
     
-    init();
-    
+    init(&myDebugScreen);
+
+	end = ProfileClock::now();
+	TimeDiff test_duration = end - start;
+
+	if (catchTime) {
+		myDebugScreen.putChrono("Load_main", test_duration);
+		catchTime = false;
+
+		// Initialize debug-screen values.
+		myDebugScreen.putBool("Some bool", false);
+		// Explicit cast to string; otherwise treated as bool
+		myDebugScreen.putString("Scene file", myDebugScreen.sceneData);
+		myDebugScreen.putVector("Camera position", &MyCameraPosition);
+		//myDebugScreen.put("Some Value", 23);
+
+	}
+		
+
     // Main loop for glut. This just runs your application.
     glutMainLoop();
-    
+   
     // Execution never reaches this point.
     return 0;
 }
@@ -175,8 +220,8 @@ void reshape(int w, int h)
 {
     glViewport(0, 0, (GLsizei)w, (GLsizei)h);
     glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
+	glLoadIdentity();
+
     //glOrtho (-1.1, 1.1, -1.1,1.1, -1000.0, 1000.0);
     gluPerspective(50, (float)w / h, 0.01, 10);
     glMatrixMode(GL_MODELVIEW);
@@ -265,12 +310,16 @@ void performRaytracingBlock( unsigned int xStart,
 * Print progress of ray tracing.
 **/
 void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
-    
+
+	myDebugScreen.traceUpdate(0.0);
+
     while(! *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
         std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
         
+		myDebugScreen.traceUpdate(progressPercentage);
+
 #ifdef _WIN32
 		Sleep(500);
 #else
@@ -279,7 +328,8 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     }
     
     std::cout << "100 %" << std::endl;
-    
+
+	myDebugScreen.traceEnd();
 }
 
 

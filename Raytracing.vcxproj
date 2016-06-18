@@ -11,6 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="DebugScreen.h" />
+    <ClInclude Include="Lens.h" />
     <ClInclude Include="imageWriter.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
@@ -20,6 +23,7 @@
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DebugScreen.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="raytracing.cpp" />

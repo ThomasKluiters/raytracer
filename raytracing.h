@@ -2,6 +2,7 @@
 #define RAYTRACING_Hjdslkjfadjfasljf
 #include <vector>
 #include "mesh.h"
+#include "DebugScreen.h"
 
 //Welcome to your MAIN PROJECT...
 //THIS IS THE MOST relevant code for you!
@@ -17,7 +18,7 @@ extern unsigned int RayTracingResolutionX;  // largeur fenetre
 extern unsigned int RayTracingResolutionY;  // largeur fenetre
 
 //use this function for any preprocessing of the mesh.
-void init();
+void init(DebugScreen *debugScreen);
 
 //you can use this function to transform a click to an origin and destination
 //the last two values will be changed. There is no need to define this function.

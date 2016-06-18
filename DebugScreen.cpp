@@ -247,7 +247,7 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	}
 
 	// Puts the given description / integer pair in the map.
-	void DebugScreen::putInt(std::string description, int &value) 
+	void DebugScreen::putInt(std::string description, int value) 
 	{
 		integers_to_track[description] = value;
 		cout << "Loaded \n <" << description << ", " << value << ">" << endl;
