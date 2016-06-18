@@ -14,10 +14,13 @@
 #include <GL/glut.h>
 #endif
 #include "raytracing.h"
+#include "Camera.h"
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
+
+Camera myCamera = Camera(MyCameraPosition, Vec3Df(0.0,1.0,0.0));
 
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
@@ -42,7 +45,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("mirror4.obj", true);
+	MyMesh.loadMesh("cube.obj", true);
  //  MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
@@ -60,7 +63,10 @@ void init()
 //return the color of your pixel.
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 {
-	return recursiveRaytracer(origin, dest, 1);
+	if (myCamera.apertureIntersect(origin, dest))
+		return recursiveRaytracer(origin, dest, 1);
+	else
+		return(Vec3Df(0.3,0.6,0.1));
 }
 
 Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth) {
@@ -289,7 +295,10 @@ void yourDebugDraw()
 {
 	// Draw the mesh.
 	MyMesh.draw();
-	
+
+	// Update cameraposition
+	myCamera.transformCamera(MyCameraPosition);
+
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
 	glDisable(GL_LIGHTING);
@@ -374,12 +383,7 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 
 	Light l(origin, origin + v1, origin + v2);
 	lights.push_back(l);
-
-
 }
-
-
-
 
 /**
 * yourKeyboardFunc is used to deal with keyboard input.
@@ -418,15 +422,20 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	}
 
 	if (t == 'c') {
-		clearAllLines();
+		myCamera.lookAt(rayDestination);
 		std::cout << MyCameraPosition << std::endl;
+	}
+
+	if (t == 'C') {
+		clearAllLines();
+		draw = true;
+		drawLine(myCamera.lookAtPos, myCamera.camPos, Vec3Df(1.0,0.6,0.0));
+		draw = false;
 	}
 
 	if (t == 'n') {
 		draw = true;
-
 		lichtbak(rayOrigin, rayDestination);
-
 		draw = false;
 	}
 
