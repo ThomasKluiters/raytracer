@@ -81,7 +81,8 @@ void Mesh::draw(){
 	for (unsigned int i = 0; i < triangles.size(); ++i)
 	{
 		unsigned int triMat = triangleMaterials.at(i);
-		Vec3Df col = this->materials.at(triMat).Kd();
+		
+		Vec3Df col = Vec3Df(0.1, 0.1,  0.1);
 		glColor3fv(col.pointer());
 		Vec3Df edge01 = vertices[triangles[i].v[1]].p - vertices[triangles[i].v[0]].p;
 		Vec3Df edge02 = vertices[triangles[i].v[2]].p - vertices[triangles[i].v[0]].p;
@@ -203,8 +204,10 @@ printf("--loadMesh: load material file %s\n", file.c_str());
 		// vertex
 		else if (strncmp(s, "v ", 2) == 0)
 		{
-            sscanf(s, "v %f %f %f", &x, &y, &z);
-			vertices.push_back(Vec3Df(x, y, z));
+			sscanf(s, "v %f %f %f", &x, &y, &z);
+			Vec3Df v(x, y, z);
+			
+			vertices.push_back(v);
 		}
         
 
@@ -340,6 +343,7 @@ printf("--loadMesh: load material file %s\n", file.c_str());
 		}
 		memset(&s, 0, LINE_LEN);
 	}
+
 	fclose(in);
 	return true;
 }
@@ -368,7 +372,7 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
 	while (_in && !feof(_in))
 	{
 		fgets(line, LINE_LEN, _in);
-
+		
 		if (line[0] == '#') // skip comments
 		{
 			memset(line, 0, LINE_LEN);
