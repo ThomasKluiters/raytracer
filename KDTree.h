@@ -117,13 +117,13 @@ struct KDTree
 			{
 				Triangle & triangle = triangles[index];
 
-				Vec3Df o = origin - MyMesh.vertices[triangle.v[0]].p;
+				// Perform Pluecker's test, as outlined in "Ray-Triangle Intersection Algorithm for Modern CPU Architectures", Shevtsov et al.
 
-				float dett = triangle.np - (o[triangle.iU] * triangle.nu + o[triangle.iV] * triangle.nv + o[triangle.iW]);
+				float dett = triangle.np - (origin[triangle.iU] * triangle.nu + origin[triangle.iV] * triangle.nv + origin[triangle.iW]);
 				float det = direction[triangle.iU] * triangle.nu + direction[triangle.iV] * triangle.nv + direction[triangle.iW];
 
-				float Du = direction[triangle.iU] * dett - (triangle.pu - o[triangle.iU]) * det;
-				float Dv = direction[triangle.iV] * dett - (triangle.pv - o[triangle.iV]) * det;
+				float Du = direction[triangle.iU] * dett - (triangle.pu - origin[triangle.iU]) * det;
+				float Dv = direction[triangle.iV] * dett - (triangle.pv - origin[triangle.iV]) * det;
 
 				float detu = triangle.e1v * Du - triangle.e1u * Dv;
 				float detv = triangle.e0u * Dv - triangle.e0v * Du;
