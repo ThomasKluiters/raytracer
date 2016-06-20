@@ -7,14 +7,13 @@ These tasks have not yet been started:
 * Implement depth of field
 * Implement motion blur
 * Implement gaussian blur
-* Implement distributed raytracing
 * Implement motion picture
 
 ## In Progress
 
 These tasks are in progress:
 * SIMD ray-triangle intersection (G & C)
-* Implement specularities (G & C)
+* Implement distributed raytracing (G & C)
 * Implement refraction (R)
 * Implement reflection (R)
 * Implement textures (E)
@@ -30,4 +29,5 @@ These tasks are done:
 * Simple AABB acceleration structure (L & T)
 * Implement advanced acceleration structure (L & T)
 * Multi-threading of the main raytracing loop (G & C)
+* Multi-threading of pre computing often used triangle related values (G & C)
 * Implement simple ray tracing (G, C & R)
