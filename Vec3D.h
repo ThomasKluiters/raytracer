@@ -1,5 +1,5 @@
 #pragma once
-//3D vectorial computations 
+//3D vectorial computations
 #include <cmath>
 #include <iostream>
 
@@ -123,9 +123,9 @@ public:
         p[2] /= s;
         return (*this);
     };
-
+    
     //---------------------------------------------------------------
-
+    
     inline Vec3D & init (T x, T y, T z) {
         p[0] = x;
         p[1] = y;
@@ -203,7 +203,7 @@ public:
     static inline Vec3D interpolate (const Vec3D & u, const Vec3D & v, T alpha) {
         return (u * (1.0f - alpha) + v * alpha);
     }
-
+    
     // cartesion to polar coordinates
     // result:
     // [0] = length
@@ -228,7 +228,7 @@ public:
             polar[2] = -M_PI * 0.5;
         return polar;
     }
-
+    
     // polar to cartesian coordinates
     // input:
     // [0] = length
@@ -241,8 +241,8 @@ public:
         cart[2] = v[0] * (T) cos (v[1]);
         return cart;
     }
-	//attention, this function might not do, what you expect if v2 is not normalized.
-	//This is no bug, but wanted for some applications.
+    //attention, this function might not do, what you expect if v2 is not normalized.
+    //This is no bug, but wanted for some applications.
     static inline Vec3D projectOntoVector (const Vec3D & v1, const Vec3D & v2) {
         return v2 * dotProduct (v1, v2);
     }
@@ -252,20 +252,20 @@ public:
                       v[0]*q[0] + v[1]*q[1] + v[2]*q[2],
                       n[0]*q[0] + n[1]*q[1] + n[2]*q[2]);
     }
-
-
-	T * pointer()
-	{
-		return p;
-	}
-
-	const T * pointer() const
-	{
-		return p;
-	}
-
-		
-	T p[3];
+    
+    
+    T * pointer()
+    {
+        return p;
+    }
+    
+    const T * pointer() const
+    {
+        return p;
+    }
+    
+    
+    T p[3];
 };
 
 template <class T> inline Vec3D<T> swap (Vec3D<T> & P, Vec3D<T> & Q) {

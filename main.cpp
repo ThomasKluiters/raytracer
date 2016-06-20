@@ -19,7 +19,6 @@
 #include <ctime>
 #include <map>
 #include <numeric>
-//#include <unistd.h>
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
@@ -252,16 +251,14 @@ void performRaytracingYRange(unsigned int start,
 
 
 /**
-* Print progress of ray tracing
-**/
+ * Print progress of ray tracing
+ **/
 void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     
     while(! *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
         std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
-        
-  //      usleep(500000);
     }
     
     std::cout << "100 %" << std::endl;
@@ -309,6 +306,10 @@ void keyboard(unsigned char key, int x, int y)
             produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
             produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
             
+            for (std::vector<Triangle>::iterator triangle = MyMesh.triangles.begin(); triangle != MyMesh.triangles.end(); ++triangle) {
+                triangle->precomputeValues(MyMesh.vertices);
+            }
+            
             // Starting time, used to display running time
             std::time_t startTime = std::time(nullptr);
             
@@ -330,22 +331,22 @@ void keyboard(unsigned char key, int x, int y)
             for (unsigned int t = 0; t < NUM_THREADS; ++t) {
                 
                 threads.push_back(std::thread(
-                                     performRaytracingYRange,
-                                     t * numberOfYPixelsInThread, // start
-                                     (t+1) * numberOfYPixelsInThread, // end
-                                     origin00,
-                                     origin01,
-                                     origin10,
-                                     origin11,
-                                     dest00,
-                                     dest01,
-                                     dest10,
-                                     dest11,
-                                     &result,
-                                     t,
-                                     &progress
-                ));
-             
+                                              performRaytracingYRange,
+                                              t * numberOfYPixelsInThread, // start
+                                              (t+1) * numberOfYPixelsInThread, // end
+                                              origin00,
+                                              origin01,
+                                              origin10,
+                                              origin11,
+                                              dest00,
+                                              dest01,
+                                              dest10,
+                                              dest11,
+                                              &result,
+                                              t,
+                                              &progress
+                                              ));
+                
             }
             
             

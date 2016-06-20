@@ -12,6 +12,8 @@
 #define min3(x, y, z) min(x, min(y, z))
 #define max3(x, y, z) max(x, max(y, z))
 
+#define EPS 1.192092896e-015F 
+
 using namespace std;
 
 typedef unsigned char byte;
@@ -66,13 +68,11 @@ struct Intersection
 	float distance;
 
 	Vec3Df origin;
-
-	Vec3Df direction;
-
+	
 	Vec3Df position;
 
 	Vec3Df normal;
-
+	
 	int triangle;
 
 	bool hit()
@@ -101,9 +101,8 @@ struct KDTree
 	{
 		Intersection intersection;
 		intersection.origin = origin;
-		intersection.direction = direction;
 		intersection.distance = FLT_MAX;
-
+		
 		trace(origin, direction, intersection, triangles, vertices);
 		
 		return intersection;
@@ -128,7 +127,7 @@ struct KDTree
 
 				register float determinant = Vec3Df::dotProduct(P, e1);
 
-				if (determinant > -FLT_EPSILON && determinant < FLT_EPSILON)
+				if (determinant > -EPS && determinant < EPS)
 					continue;
 
 				float inverse = 1.0f / determinant;
@@ -149,10 +148,10 @@ struct KDTree
 
 				float t = Vec3Df::dotProduct(e2, Q) * inverse;
 
-				if (t > 0.0001 && t < intersection.distance)
+				if (t > FLT_EPSILON && t < intersection.distance)
 				{
 					intersection.distance = t;
-					intersection.position = origin + t * direction;
+					intersection.position = v0 + u * e1 + v * e2;
 					intersection.triangle = index;
 					intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
 				}
@@ -488,7 +487,7 @@ public:
 
 	inline void check(Vec3Df & min_l, Vec3Df & max_l, Vec3Df & min_r, Vec3Df & max_r, float position, byte dimension, Vec3Df & v1, Vec3Df & v2)
 	{
-		if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] < position && v2[dimension] > position))
+		if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] <= position && v2[dimension] >= position))
 		{
 			Vec3Df intersection = intersect(v1, v2, dimension, position).p;
 			populate(min_l, max_l, min_r, max_r, intersection);
@@ -656,9 +655,9 @@ public:
 	/**
 	*	Implements the Termiante function according to Wald et al. function (6).
 	*/
-	bool terminate(vector<int> T, float C_v)
+	bool terminate(vector<int> T, float C_v, int N_l, int N_r)
 	{
-		return (T.size() * 0.8 * triangleTestCost) <= C_v;
+		return (T.size() * triangleTestCost * lambda(N_l, N_r)) <= C_v;
 	}
 
 	/**
@@ -669,7 +668,7 @@ public:
 		Split split = findPlane(T.size(), V, E);
 		pair<Voxel, Voxel> children = splitBox(V, split.plane);
 
-		if (terminate(T, split.cost))
+		if (terminate(T, split.cost, split.N_l, split.N_r))
 		{
 			return new KDTree{ V, NULL, NULL, T };
 		}
