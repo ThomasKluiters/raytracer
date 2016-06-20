@@ -23,6 +23,7 @@
 #include "mesh.h"
 #include "traqueboule.h"
 #include "imageWriter.h"
+#include <iterator>
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -249,6 +250,18 @@ void performRaytracingYRange(unsigned int start,
 }
 
 
+/**
+* Precompute triangle values of triangles starting at given triangle
+**/
+void precomputeTriangleValues(std::vector<Triangle>::iterator triangle, int offset) {
+    int i = 0;
+    
+    for (; i<offset && MyMesh.triangles.end() != triangle; ++triangle) {
+        triangle->precomputeValues(MyMesh.vertices);
+        i++;
+    }
+    
+}
 
 /**
 * Print progress of ray tracing
@@ -306,9 +319,37 @@ void keyboard(unsigned char key, int x, int y)
             produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
             produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
             
-			for (std::vector<Triangle>::iterator triangle = MyMesh.triangles.begin(); triangle != MyMesh.triangles.end(); ++triangle) {
-				triangle->precomputeValues(MyMesh.vertices);
-			}
+            
+            
+            // Vector to store threads
+            std::vector<std::thread> precomputeThreads;
+            
+            // Precompute values for triangles
+            std::time_t startTimePrecompute = std::time(nullptr);
+            
+            unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
+            
+            for (unsigned int t = 0; t < NUM_THREADS; ++t) {
+                
+                if ( (t * trianglesPerThread) < MyMesh.triangles.size() ) {
+                
+                    std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
+                
+                    precomputeThreads.push_back(std::thread(
+                                              precomputeTriangleValues,
+                                              begin,
+                                              trianglesPerThread
+                                  ));
+                    
+                }
+            }
+                                           
+            // Join all ray tracing threads
+            for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread) {
+                thread->join();
+            }
+            std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
+            
 
             // Starting time, used to display running time
             std::time_t startTime = std::time(nullptr);

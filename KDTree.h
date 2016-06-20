@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Vec3D.h"
-#include "mesh.h";
+#include "mesh.h"
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <algorithm>
 #include <mutex>
+#include "float.h"
 #include "mmintrin.h"
 
 #define min3(x, y, z) min(x, min(y, z))
@@ -82,7 +83,6 @@ struct Intersection
 
 };
 
-
 struct KDTree
 {
 	Voxel voxel;
@@ -111,14 +111,15 @@ struct KDTree
 
 	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
 	{
+    
 		if (isLeaf())
 		{
 			for (auto index : indices)
 			{
 				Triangle & triangle = triangles[index];
-
+                
 				// Perform Pluecker's test, as outlined in "Ray-Triangle Intersection Algorithm for Modern CPU Architectures", Shevtsov et al.
-
+                
 				float dett = triangle.np - (origin[triangle.iU] * triangle.nu + origin[triangle.iV] * triangle.nv + origin[triangle.iW]);
 				float det = direction[triangle.iU] * triangle.nu + direction[triangle.iV] * triangle.nv + direction[triangle.iW];
 
