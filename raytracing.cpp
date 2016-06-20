@@ -63,41 +63,50 @@ void init()
 * Return the color of your pixel.
 */
 //return the color of your pixel.
-Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest, int depth)
+Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
 {
-	Intersection intersection = tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices);
+	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
 
 	if (!intersection.hit())
 	{
+		drawLine(origin, origin , Vec3Df(1, 0, 0));
 		return Vec3Df(0, 0, 0);
 	}
 
-
-
 	const int triangle = intersection.triangle;
-
-	Vec3Df localColor = Vec3Df(0, 0, 0);
-	Vec3Df normal = intersection.normal;
-	Vec3Df location = intersection.position;
 
 	const int material = MyMesh.triangleMaterials[triangle];
 
+	Vec3Df normal = intersection.normal;
+	Vec3Df inv_normal = -1.0f * normal;
+	Vec3Df location = intersection.position;
+	Vec3Df localColor = MyMesh.materials[material].Ka();
+
+
 	for (auto light : lights)
 	{
-		localColor = localColor + softshading(location, normal, intersection.origin, light, material);
+		localColor = localColor + softshading(location, normal, origin, light, material);
 	}
 
-	if (MyMesh.materials[material].has_Ni() && 15 > 1) {
-		Vec3Df in = location - origin;
-		float Ni = 0.35f;
-		in.normalize();
-		float debug = Vec3Df::dotProduct(in, location);
-		Vec3Df out = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
+	if (depth < 6) {
+		Vec3Df N = intersection.normal;
+		N.normalize();
 
-		Vec3Df reflection = performRayTracing(location, (location + out), depth + 1);
-		return  (1 - Ni) * reflection + Ni * localColor;
+		Vec3Df R = -1.0f * direction;
+		R.normalize();
+
+		Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+
+		drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
+		drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
+		drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
+
+		return localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
+
+		//return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
+
+
 	}
-
 
 	return localColor;
 }
@@ -132,6 +141,7 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 				Vec3Df reflection = light_in - 2 * Vec3Df::dotProduct(light_in, normal) * normal;
 				float z = Vec3Df::dotProduct(view, reflection);
 
+
 				if (Vec3Df::dotProduct(normal, light_in) >= 0 && z > 0)
 				{
 					color += pow(z, shininess) * specular;
@@ -146,8 +156,17 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 
 
 
-bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
-	return tree->trace(origin, dest, MyMesh.triangles, MyMesh.vertices).hit();
+bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest)
+{
+	Intersection intersection = tree->trace(origin, dest - origin, MyMesh.triangles, MyMesh.vertices);
+	if (intersection.hit())
+	{
+		float distanceToLight = Vec3Df::distance(origin, dest);
+		float distanceToIntersetion = Vec3Df::distance(intersection.position, dest);
+
+		return distanceToIntersetion <= distanceToLight;
+	}
+	return false;
 }
 
 
@@ -160,40 +179,40 @@ void yourDebugDraw()
 {
 	// Draw the mesh.
 	MyMesh.draw();
-	
+
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
 	glDisable(GL_LIGHTING);
-	glColor3f(1,1,1);
+	glColor3f(1, 1, 1);
 	glPointSize(10);
 	glBegin(GL_POINTS);
-	for (int i=0;i<MyLightPositions.size();++i)
+	for (int i = 0; i<MyLightPositions.size(); ++i)
 		glVertex3fv(MyLightPositions[i].pointer());
 	glEnd();
 	glPopAttrib();									// (Restore all GL attributes.)
-	
-	// Draw the test ray, which is set by the keyboard function.
-	/*
-	glPushAttrib(GL_ALL_ATTRIB_BITS);
-	glDisable(GL_LIGHTING);
-	glBegin(GL_LINES);
-	glColor3f(0,1,1);
-	glVertex3f(testRayOrigin[0], testRayOrigin[1], testRayOrigin[2]);
-	glColor3f(0,0,1);
-	glVertex3f(testRayDestination[0], testRayDestination[1], testRayDestination[2]);
-	glEnd();
-	glPointSize(10);
-	glBegin(GL_POINTS);
-	glVertex3fv(MyLightPositions[0].pointer());
-	glEnd();
-	glPopAttrib();
-	*/
+
+													// Draw the test ray, which is set by the keyboard function.
+													/*
+													glPushAttrib(GL_ALL_ATTRIB_BITS);
+													glDisable(GL_LIGHTING);
+													glBegin(GL_LINES);
+													glColor3f(0,1,1);
+													glVertex3f(testRayOrigin[0], testRayOrigin[1], testRayOrigin[2]);
+													glColor3f(0,0,1);
+													glVertex3f(testRayDestination[0], testRayDestination[1], testRayDestination[2]);
+													glEnd();
+													glPointSize(10);
+													glBegin(GL_POINTS);
+													glVertex3fv(MyLightPositions[0].pointer());
+													glEnd();
+													glPopAttrib();
+													*/
 	for (int i = 0; i < testArrayfinish.size(); ++i) {
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
 		glBegin(GL_LINES);
 		glLineWidth(2.5);
-		glColor3f(testArraycolor[i][0],testArraycolor[i][1], testArraycolor[i][2]);
+		glColor3f(testArraycolor[i][0], testArraycolor[i][1], testArraycolor[i][2]);
 		glBegin(GL_LINES);
 		glVertex3f(testArraystart[i][0], testArraystart[i][1], testArraystart[i][2]);
 		glVertex3f(testArrayfinish[i][0], testArrayfinish[i][1], testArrayfinish[i][2]);
@@ -202,7 +221,7 @@ void yourDebugDraw()
 		glEnd();
 		glPopAttrib();
 	}
-	
+
 	// Draw whatever else you want...
 	////glutSolidSphere(1,10,10);
 	////allows you to draw a sphere at the origin.
@@ -240,7 +259,7 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 	drawLine(origin, origin + normal, Vec3Df(1, 0, 0));
 	drawLine(origin, origin + v1, Vec3Df(0, 1, 1));
 	drawLine(origin, origin + v2, Vec3Df(0, 0, 1));
-	drawLine(origin + v1, origin + v1 + v2, Vec3Df(0,0,1));
+	drawLine(origin + v1, origin + v1 + v2, Vec3Df(0, 0, 1));
 	drawLine(origin + v2, origin + v1 + v2, Vec3Df(0, 0, 1));
 
 	Light l(origin, origin + v1, origin + v2);
@@ -254,7 +273,7 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 
 /**
 * yourKeyboardFunc is used to deal with keyboard input.
-* 
+*
 * - t is the character that was pressed.
 * - x is the mouse's x position in pixels.
 * - y is the mouse's y position in pixels.
@@ -262,11 +281,11 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 *
 * Reserved keys:
 * - 'L' adds a light positioned at the camera location to the MyLightPositions vector.
-* - 'l' modifies the last added light to the current camera position (by default, there is only one light, so move it 
+* - 'l' modifies the last added light to the current camera position (by default, there is only one light, so move it
 *	with l). ATTENTION: These lights do NOT affect the real-time rendering. You should use them for the raytracing.
 * - 'r' calls the function performRaytracing on EVERY pixel, using the correct associated ray. It then stores the result
 *	in an image "result.ppm". Initially, this function is fast (performRaytracing simply returns the target of the ray -
-*	see the code above), but once you replaced this function and raytracing is in place, it might take a while to 
+*	see the code above), but once you replaced this function and raytracing is in place, it might take a while to
 *	complete...
 */
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination)
@@ -274,8 +293,8 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	//here, as an example, I use the ray to fill in the values for my upper global ray variable
 	//I use these variables in the debugDraw function to draw the corresponding ray.
 	//try it: Press a key, move the camera, see the ray that was launched as a line.
-	testRayOrigin=rayOrigin;	
-	testRayDestination=rayDestination;
+	testRayOrigin = rayOrigin;
+	testRayDestination = rayDestination;
 	//testArraystart.push_back(Vec3Df(0.0, 0.0, 0.0));
 	//testArrayfinish.push_back(Vec3Df(15, 0, 0));
 	//testArraycolor.push_back(Vec3Df(1, 1, 0));
@@ -283,8 +302,9 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	if (t == 't') {
 		clearAllLines();
 		draw = true;
-		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination, 1);
-		std::cout <<" traced ray for" << rayOrigin << "," << rayDestination << "," << z  << std::endl;
+		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination - testRayOrigin, 1);
+		//drawLine(testRayOrigin, testRayDestination, z);
+		std::cout << " traced ray for" << rayOrigin << "," << rayDestination << "," << z << std::endl;
 		draw = false;
 	}
 
@@ -300,10 +320,21 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 
 		draw = false;
 	}
-	
+
+
+	if (t == 'z') {
+		draw = true;
+		for (int i = 0; i < MyMesh.vertices.size(); ++i) {
+			draw = true;
+			drawLine(MyMesh.vertices[i].p, MyMesh.vertices[i].p + MyMesh.vertices[i].n, Vec3Df(1, 0.5, 0.5));
+
+		}
+		draw = false;
+	}
+
 	// do here, whatever you want with the keyboard input t.
-	
+
 	//...
-	
-	std::cout<<t<<" pressed! The mouse was in location "<<x<<","<<y<<"!"<<std::endl;	
+
+	std::cout << t << " pressed! The mouse was in location " << x << "," << y << "!" << std::endl;
 }

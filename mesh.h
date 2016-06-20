@@ -35,8 +35,8 @@ public:
 
 	}
 	
-	std::vector<Vec3Df> lights(int sides) {
-		
+	std::vector<Vec3Df> lights(int sides)
+	{
 		std::vector<Vec3Df> lights;
 		float partition = 1.0f / sides;
 		for (int i = 0; i < sides; ++i) {

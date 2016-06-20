@@ -13,6 +13,8 @@
 #define min3(x, y, z) min(x, min(y, z))
 #define max3(x, y, z) max(x, max(y, z))
 
+#define EPS 1.192092896e-015F 
+
 using namespace std;
 
 typedef unsigned char byte;
@@ -67,13 +69,11 @@ struct Intersection
 	float distance;
 
 	Vec3Df origin;
-
-	Vec3Df direction;
-
+	
 	Vec3Df position;
 
 	Vec3Df normal;
-
+	
 	int triangle;
 
 	bool hit()
@@ -101,9 +101,8 @@ struct KDTree
 	{
 		Intersection intersection;
 		intersection.origin = origin;
-		intersection.direction = direction;
 		intersection.distance = FLT_MAX;
-
+		
 		trace(origin, direction, intersection, triangles, vertices);
 		
 		return intersection;
@@ -130,7 +129,7 @@ struct KDTree
 				float detv = triangle.e0u * Dv - triangle.e0v * Du;
 
 				float tmpdet = det - detu - detv;
-
+                
 				if ((tmpdet >= 0 && detu >= 0 && detv >= 0) || (tmpdet < 0 && detu < 0 && detv < 0))
 				{
 					float rdet = 1 / det;
@@ -478,7 +477,7 @@ public:
 
 	inline void check(Vec3Df & min_l, Vec3Df & max_l, Vec3Df & min_r, Vec3Df & max_r, float position, byte dimension, Vec3Df & v1, Vec3Df & v2)
 	{
-		if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] < position && v2[dimension] > position))
+		if ((v1[dimension] >= position && v2[dimension] <= position) || (v1[dimension] <= position && v2[dimension] >= position))
 		{
 			Vec3Df intersection = intersect(v1, v2, dimension, position).p;
 			populate(min_l, max_l, min_r, max_r, intersection);
@@ -646,9 +645,9 @@ public:
 	/**
 	*	Implements the Termiante function according to Wald et al. function (6).
 	*/
-	bool terminate(vector<int> T, float C_v)
+	bool terminate(vector<int> T, float C_v, int N_l, int N_r)
 	{
-		return (T.size() * 0.8 * triangleTestCost) <= C_v;
+		return (T.size() * triangleTestCost * lambda(N_l, N_r)) <= C_v;
 	}
 
 	/**
@@ -659,7 +658,7 @@ public:
 		Split split = findPlane(T.size(), V, E);
 		pair<Voxel, Voxel> children = splitBox(V, split.plane);
 
-		if (terminate(T, split.cost))
+		if (terminate(T, split.cost, split.N_l, split.N_r))
 		{
 			return new KDTree{ V, NULL, NULL, T };
 		}
