@@ -11,20 +11,34 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AreaLight.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="FilmPlane.h" />
     <ClInclude Include="imageWriter.h" />
+    <ClInclude Include="Lens.h" />
+    <ClInclude Include="LensElement.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="PointLight.h" />
     <ClInclude Include="raytracing.h" />
+    <ClInclude Include="SpotLight.h" />
     <ClInclude Include="traqueboule.h" />
     <ClInclude Include="Vec3D.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AreaLight.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="FilmPlane.cpp" />
+    <ClCompile Include="Lens.cpp" />
+    <ClCompile Include="LensElement.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
+    <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="raytracing.cpp" />
+    <ClCompile Include="Light.cpp" />
+    <ClCompile Include="SpotLight.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AD3F39DC-5E4C-4348-97E1-770D1DFAAF54}</ProjectGuid>

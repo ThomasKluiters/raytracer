@@ -14,17 +14,17 @@
 #include <GL/glut.h>
 #endif
 #include "raytracing.h"
-#include "Camera.h"
+
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
 
-Camera myCamera = Camera(MyCameraPosition, Vec3Df(0.0,1.0,0.0));
-
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
 std::vector<Vec3Df> testArraycolor;
+
+Camera * myCamera;
 
 int maxDepth;
 bool draw;
@@ -35,8 +35,9 @@ std::vector<Light> lights;
 /**
 * Use this function for any preprocessing of the mesh.
 */
-void init()
+void init(Camera * camera)
 {
+	myCamera = camera;
 	//load the mesh file
 	//please realize that not all OBJ files will successfully load.
 	//Nonetheless, if they come from Blender, they should, if they 
@@ -45,7 +46,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("cube.obj", true);
+	MyMesh.loadMesh("DoF-test.obj", true);
  //  MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
@@ -63,10 +64,7 @@ void init()
 //return the color of your pixel.
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & dest)
 {
-	if (myCamera.apertureIntersect(origin, dest))
-		return recursiveRaytracer(origin, dest, 1);
-	else
-		return(Vec3Df(0.3,0.6,0.1));
+	return recursiveRaytracer(origin, dest, 3);
 }
 
 Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth) {
@@ -136,11 +134,10 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 		// local light values
 		Vec3Df localcolor = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ka();
 		
-		for (int i = 0; i < MyLightPositions.size(); ++i) {
-			localcolor = localcolor + lambertshading(closestIntersect, normalintersect, MyLightPositions[i], triangle);
+		Light_I mySpotLight = SpotLight(MyCameraPosition, Vec3Df(0.0, 0.0, 0.0), Vec3Df(1.0, 1.0, 1.0), 1, 3.0);
 
-		}
-		
+		localcolor = localcolor + lambertshading(closestIntersect, normalintersect, mySpotLight, triangle);
+
 		
 		/*
 		for (int i = 0; i < lights.size(); ++i) {
@@ -214,7 +211,7 @@ Vec3Df recursiveRaytracer(const Vec3Df & origin, const Vec3Df & dest, int depth)
 	//	testArraycolor.push_back(Vec3Df(1, 0, 0));
 	return val;
 }
-
+/*
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Light l, int material) {
 	std::vector<Vec3Df> lights = l.lights(6);
 	Vec3Df temp = Vec3Df(0, 0, 0);
@@ -223,10 +220,15 @@ Vec3Df softshading(Vec3Df location, Vec3Df normal, Light l, int material) {
 	}
 	return 1.0f / lights.size() * temp;
 }
+*/
 
+Vec3Df shade(Vec3Df location, Vec3Df normal, Light_I & light, int material) {
+	return    (lambertshading(location, normal, light, material)
+			+ blinnPhongSpecular(location, normal, light, material)) / 2.0;
+}
 
-Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df light, int material) {
-	Vec3Df light_in = light - location;
+Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Light_I & light, int material) {
+	Vec3Df light_in = light.getPosition() - location;
 	light_in.normalize();
 	if (!lightobstructed(location, light)) {
 		float s = Vec3Df::dotProduct(normal, light_in);
@@ -238,10 +240,36 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df light, int material
 	return Vec3Df(0, 0, 0);
 }
 
+Vec3Df blinnPhongSpecular(const Vec3Df & vertexPos, Vec3Df & normal, Light_I & light, unsigned int material)
+{
+	normal.normalize();
+
+	Vec3Df v_view = MyCameraPosition - vertexPos;
+	v_view.normalize();
+
+	Vec3Df v_light = MyCameraPosition - vertexPos;
+	v_light.normalize();
+
+	Vec3Df h_vec = v_light + v_view;
+	h_vec.normalize();
+
+	if (Vec3Df::dotProduct(v_light, normal) < 0)
+		return Vec3Df(0.f, 0.f, 0.f);
+
+	float angle_normal = Vec3Df::dotProduct(v_light, normal);
+
+	float dot = Vec3Df::dotProduct(normal, h_vec);
+	if (dot < 0.f)
+		dot = 0.f;
+	return (  light.getLightColour() 
+			+ MyMesh.materials[MyMesh.triangleMaterials[material]].Ks() * pow(dot, 4.0)
+			) / 2.0;
+}
 
 
-bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
-	Vec3Df ray = dest - origin;
+
+bool lightobstructed(const Vec3Df & origin, Light_I & light){
+	Vec3Df ray = light.getPosition() - origin;
 	for (int i = 0; i<MyMesh.triangles.size(); ++i) {
 		Vec3Df Sg = MyMesh.vertices[MyMesh.triangles[i].v[0]].p;
 		Vec3Df Sone = MyMesh.vertices[MyMesh.triangles[i].v[1]].p - Sg;
@@ -251,6 +279,7 @@ bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
 		normal.normalize();
 
 		float np = Vec3Df::dotProduct(ray, normal);
+
 
 
 		if (np != 0) {
@@ -281,7 +310,7 @@ bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest){
 			}
 		}	
 		}
-	drawLine(origin, dest, Vec3Df(1, 0, 1));
+	drawLine(origin, light.getPosition(), Vec3Df(1, 0, 1));
 	return false;
 	}
 
@@ -297,7 +326,7 @@ void yourDebugDraw()
 	MyMesh.draw();
 
 	// Update cameraposition
-	myCamera.transformCamera(MyCameraPosition);
+	myCamera->transformCamera(MyCameraPosition);
 
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
@@ -362,7 +391,7 @@ void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color) {
 		testArraycolor.push_back(color);
 	}
 }
-
+/*
 void lichtbak(Vec3Df origin, Vec3Df dest) {
 	Vec3Df normal = dest - origin;
 	normal.normalize();
@@ -383,7 +412,7 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 
 	Light l(origin, origin + v1, origin + v2);
 	lights.push_back(l);
-}
+}*/
 
 /**
 * yourKeyboardFunc is used to deal with keyboard input.
@@ -422,20 +451,14 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	}
 
 	if (t == 'c') {
-		myCamera.lookAt(rayDestination);
+		myCamera->lookAt(rayDestination);
 		std::cout << MyCameraPosition << std::endl;
 	}
 
 	if (t == 'C') {
 		clearAllLines();
 		draw = true;
-		drawLine(myCamera.lookAtPos, myCamera.camPos, Vec3Df(1.0,0.6,0.0));
-		draw = false;
-	}
-
-	if (t == 'n') {
-		draw = true;
-		lichtbak(rayOrigin, rayDestination);
+		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0,0.6,0.0));
 		draw = false;
 	}
 
