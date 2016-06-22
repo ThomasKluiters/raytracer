@@ -15,6 +15,7 @@
 #include "raytracing.h"
 #include "KDTree.h"
 
+
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
@@ -22,6 +23,8 @@ Vec3Df testRayDestination;
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
 std::vector<Vec3Df> testArraycolor;
+
+Camera * myCamera;
 
 int maxDepth;
 bool draw;
@@ -35,8 +38,9 @@ KDTree* tree;
 /**
 * Use this function for any preprocessing of the mesh.
 */
-void init()
+void init(Camera * camera)
 {
+	myCamera = camera;
 	//load the mesh file
 	//please realize that not all OBJ files will successfully load.
 	//Nonetheless, if they come from Blender, they should, if they 
@@ -45,7 +49,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("dodgeColorTest.obj", true);
+	MyMesh.loadMesh("DoF-test.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -121,6 +125,10 @@ Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int m
 	return 1.0f / lights.size() * temp;
 }
 
+Vec3Df shade(Vec3Df location, Vec3Df normal, Light_I & light, int material) {
+	return    (lambertshading(location, normal, light, material)
+			+ blinnPhongSpecular(location, normal, light, material)) / 2.0;
+}
 
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material) {
 	Vec3Df light_in = light - location;
@@ -133,6 +141,24 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 			if (MyMesh.materials[material].has_Ks()) {
 				Vec3Df specular = MyMesh.materials[material].Ks();;
 
+	if (Vec3Df::dotProduct(v_light, normal) < 0)
+		return Vec3Df(0.f, 0.f, 0.f);
+
+	float angle_normal = Vec3Df::dotProduct(v_light, normal);
+
+	float dot = Vec3Df::dotProduct(normal, h_vec);
+	if (dot < 0.f)
+		dot = 0.f;
+	return (  light.getLightColour() 
+			+ MyMesh.materials[MyMesh.triangleMaterials[material]].Ks() * pow(dot, 4.0)
+			) / 2.0;
+}
+
+
+
+bool lightobstructed(const Vec3Df & origin, Light_I & light){
+	Vec3Df ray = light.getPosition() - origin;
+
 				float shininess = MyMesh.materials[material].Ns();
 
 				Vec3Df view = location - origin;
@@ -140,6 +166,7 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 
 				Vec3Df reflection = light_in - 2 * Vec3Df::dotProduct(light_in, normal) * normal;
 				float z = Vec3Df::dotProduct(view, reflection);
+
 
 
 				if (Vec3Df::dotProduct(normal, light_in) >= 0 && z > 0)
@@ -179,6 +206,9 @@ void yourDebugDraw()
 {
 	// Draw the mesh.
 	MyMesh.draw();
+
+	// Update cameraposition
+	myCamera->transformCamera(MyCameraPosition);
 
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
@@ -309,15 +339,14 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	}
 
 	if (t == 'c') {
-		clearAllLines();
+		myCamera->lookAt(rayDestination);
 		std::cout << MyCameraPosition << std::endl;
 	}
 
-	if (t == 'n') {
+	if (t == 'C') {
+		clearAllLines();
 		draw = true;
-
-		lichtbak(rayOrigin, rayDestination);
-
+		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0,0.6,0.0));
 		draw = false;
 	}
 

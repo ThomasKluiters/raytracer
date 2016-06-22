@@ -22,8 +22,13 @@
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
-#include "imageWriter.h"
+#include "Light.h"
 #include <iterator>
+#include "SpotLight.h"
+#ifndef _CAMERA
+#define _CAMERA
+#include "Camera.h"
+#endif
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -43,6 +48,9 @@ unsigned int WindowSize_Y = 900;	// Y-resolution
 
 #define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING true
+
+Camera myCamera = Camera(WindowSize_X, WindowSize_Y, MyCameraPosition, 
+						Vec3Df(0.0,1.0,0.0), 50.0, 11.0, 8.0);
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
@@ -326,14 +334,19 @@ void keyboard(unsigned char key, int x, int y)
             MyLightPositions[MyLightPositions.size() - 1] = getCameraPosition();
             break;
             
+	case 'd':
+	{
+		Vec3Df mag = Vec3Df(0.0, 0.0, 0.0) - getCameraPosition();
+		cout << "Length to origin is: " << mag.getLength() << endl;
+		break;
+	}
+
+
             // Click 'r'.
         case 'r':
         {
             // Pressing r will launch the raytracing.
             cout << "Raytracing" << endl;
-            
-            // Setup an image with the size of the current image.
-            Image result(WindowSize_X, WindowSize_Y);
             
             // Produce the rays for each pixel, by first computing the rays for the corners of the frustum.
             Vec3Df origin00, dest00;
@@ -346,6 +359,21 @@ void keyboard(unsigned char key, int x, int y)
             produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
             produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
             
+		cout << origin00 << " | " << dest00 <<endl;
+		cout << origin01 << " | " << dest01 << endl;
+		cout << origin10 << " | " << dest10 << endl;
+		cout << origin11 << " | " << dest11 << endl;
+
+		// Find Middle at-vector
+		float mx = 1.0f - float(x) / ((WindowSize_X - 1) / 2);
+		float my = 1.0f - float(y) / ((WindowSize_Y - 1) / 2);
+
+		Vec3Df at_vec = my*(mx*origin00 + (1 - mx)*origin10) +
+			(1 - my)*(mx*origin01 + (1 - mx)*origin11);
+
+		// I'm NOT normalizing the at-vector, because otherwise I have to hassle around to find the backplane distance.
+		//at_vec.normalize();
+
             
             
             // Vector to store threads
@@ -435,6 +463,10 @@ void keyboard(unsigned char key, int x, int y)
             
             break;
         }
+	case 'a':
+		cout << "Dumping Colour Buffer" << endl;
+		myCamera.sensor.writeToDisk("buffer.ppm");
+		break;
             
             // CLick 'Esc'.
         case 27:

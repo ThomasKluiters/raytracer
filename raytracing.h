@@ -1,7 +1,22 @@
 #ifndef RAYTRACING_Hjdslkjfadjfasljf
 #define RAYTRACING_Hjdslkjfadjfasljf
+
+#ifndef _CAMERA
+#define _CAMERA
+#include "Camera.h"
+#endif
+
+#ifndef _LIGHTS
+#define _LIGHTS
+#include "Light.h"
+#include "SpotLight.h"
+#endif
+
+#pragma once
 #include <vector>
 #include "mesh.h"
+
+
 
 //Welcome to your MAIN PROJECT...
 //THIS IS THE MOST relevant code for you!
@@ -17,7 +32,7 @@ extern unsigned int RayTracingResolutionX;  // largeur fenetre
 extern unsigned int RayTracingResolutionY;  // largeur fenetre
 
 //use this function for any preprocessing of the mesh.
-void init();
+void init(Camera * myCamera);
 
 //you can use this function to transform a click to an origin and destination
 //the last two values will be changed. There is no need to define this function.
@@ -34,10 +49,9 @@ void yourDebugDraw();
 //want keyboard interaction? Here it is...
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination);
 
-bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest);
+bool lightobstructed(const Vec3Df & origin, Light_I & light);
 void clearAllLines();
 void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
-
 #endif
