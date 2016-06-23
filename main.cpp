@@ -400,6 +400,8 @@ void keyboard(unsigned char key, int x, int y)
 								origin01, dest01,
 								origin10, dest10,
 								origin11, dest11);
+				sattelite.detach();
+
 			}
 			break;
 		}
@@ -511,10 +513,12 @@ void rayTraceStart(	Vec3Df origin00, Vec3Df dest00,
 	}
 
 	rayTracingDone = true;
+	rendering = false;
 	progressThread.join();
 
 	myCamera.sensor.writeToDisk("result.ppm");
 
 	// Print running time
 	std::cout << "The rendering took " << std::time(nullptr) - startTime << " seconds" << std::endl;
+
 }
