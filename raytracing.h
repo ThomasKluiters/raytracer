@@ -6,6 +6,11 @@
 #include "Camera.h"
 #endif
 
+#ifndef _DEBUG_SCREEN
+#define _DEBUG_SCREEN
+#include "DebugScreen.h"
+#endif
+
 #ifndef _LIGHTS
 #define _LIGHTS
 #include "Light.h"
@@ -32,7 +37,7 @@ extern unsigned int RayTracingResolutionX;  // largeur fenetre
 extern unsigned int RayTracingResolutionY;  // largeur fenetre
 
 //use this function for any preprocessing of the mesh.
-void init(Camera * myCamera);
+void init(Camera * camera, DebugScreen * debugScreen);
 
 //you can use this function to transform a click to an origin and destination
 //the last two values will be changed. There is no need to define this function.
@@ -49,9 +54,10 @@ void yourDebugDraw();
 //want keyboard interaction? Here it is...
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination);
 
-bool lightobstructed(const Vec3Df & origin, Light_I & light);
+bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest);
 void clearAllLines();
 void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
+
 #endif

@@ -237,20 +237,20 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	void DebugScreen::putString(std::string description, std::string value) 
 	{
 		strings_to_track[description] = value;
-		cout << "Loaded \n <" << description << ", " << value << ">" << endl;
+		//cout << "Loaded \n <" << description << ", " << value << ">" << endl;
 	}
 
 	void DebugScreen::putBool(std::string description, bool value) 
 	{
 		booleans_to_track[description] = value;
-		cout << "Loaded \n <" << description << ", " << value << ">" << endl;
+		//cout << "Loaded \n <" << description << ", " << value << ">" << endl;
 	}
 
 	// Puts the given description / integer pair in the map.
 	void DebugScreen::putInt(std::string description, int value) 
 	{
 		integers_to_track[description] = value;
-		cout << "Loaded \n <" << description << ", " << value << ">" << endl;
+		//cout << "Loaded \n <" << description << ", " << value << ">" << endl;
 	}
 
 	// Puts the given description / Vec3Df in the map
@@ -264,13 +264,13 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	void DebugScreen::putChrono(std::string description, std::chrono::duration<double> value) 
 	{
 		durations[description] = value;
-		cout << "Loaded \n " << format(description, value) << endl;
+		//cout << "Loaded \n " << format(description, value) << endl;
 	}
 
 	void DebugScreen::putFloat(std::string description, float value)
 	{
 		floats_to_display[description] = value;
-		cout << "Loaded \n " << format(description, value) << endl;
+		//cout << "Loaded \n " << format(description, value) << endl;
 	}
 
 	void DebugScreen::toggleOverlay() 
@@ -340,7 +340,9 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	// Can be used to write your own data to the screen, but does not support accurate layering yet.
 	void DebugScreen::pushGL()
 	{
+		glPushMatrix();
 		glMatrixMode(GL_PROJECTION);
+
 		glPushMatrix();
 		glLoadIdentity();
 		glOrtho(0.0f, (float)*x_resolution, (float)*y_resolution, 0.0f, -1.0f, 1.0f);
@@ -357,10 +359,133 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	// After the pushGL function has been called; unpop using this method.
 	void DebugScreen::popGL()
 	{
+		glEnable(GL_CULL_FACE);
 		glEnable(GL_LIGHTING);
+
 		// Reset modelview and projection
+
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
 
 		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+
 	}
+
+	void DebugScreen::drawCameraShape(Vec3Df position) {
+		pushGL();
+		popGL();
+	}
+
+	void DebugScreen::indicateOrigin() {
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glDisable(GL_LIGHTING);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+
+		glColor4f(0.8, 1.0, 0.8, 0.6);
+		
+		glBegin(GL_LINES);
+		glLineWidth(2.5);
+		glVertex3f(0.0, 0.0, 0.0);
+		glVertex3f(0.0, 10.0, 0.0);
+
+		glVertex3f(0.0, 0.0, 0.0);
+		glVertex3f(0.0, -10.0, 0.0);
+		glEnd();
+
+		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
+		glDisable(GL_BLEND);
+		glPopAttrib();
+		glEnable(GL_LIGHTING);
+	}
+
+	void DebugScreen::drawPlane(const Vec3Df &origin, float height, float width) {
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glDisable(GL_LIGHTING);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+
+		glColor4f(0.8, 0.2, 0.0, 0.2);
+		glLineWidth(2.5);
+		glBegin(GL_QUADS);
+		glVertex3f(origin[0] + width, 0.0, origin[1] + height);
+		glVertex3f(origin[0] + width, 0.0, origin[1] - height);
+		glVertex3f(origin[0] - width, 0.0, origin[1] - height);
+		glVertex3f(origin[0] - width, 0.0, origin[1] + height);
+		glEnd();
+
+		glColor4f(1.0, 0.2, 0.0, 0.4);
+		glBegin(GL_LINES);
+		glLineWidth(2.4);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(origin[0], origin[1], origin[2] + height);
+		glEnd();
+
+		glColor4f(1.0, 0.2, 0.0, 0.4);
+		glBegin(GL_LINES);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(origin[0], origin[1], origin[2] - height);
+		glEnd();
+
+		glColor4f(1.0, 0.2, 0.0, 0.4);
+		glBegin(GL_LINES);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(origin[0] + width, origin[1], origin[2]);
+		glEnd();
+
+		glColor4f(1.0, 0.2, 0.0, 0.4);
+		glBegin(GL_LINES);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(origin[0] - width, origin[1], origin[2]);
+		glEnd();
+
+		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
+		glDisable(GL_BLEND);
+		glPopAttrib();
+		glEnable(GL_LIGHTING);
+	}
+
+
+	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color, float alpha) {
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glDisable(GL_LIGHTING);
+
+		glColor4f(color[0], color[1], color[2], alpha);
+		glBegin(GL_LINES);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(dest[0], dest[1], dest[2]);
+		glEnd();
+
+		glPopAttrib();
+		glEnable(GL_LIGHTING);
+	}
+
+	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color) {
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glDisable(GL_LIGHTING);
+
+		glColor3f(color[0], color[1], color[2]);
+		glBegin(GL_LINES);
+		glVertex3f(origin[0], origin[1], origin[2]);
+		glVertex3f(dest[0], dest[1], dest[2]);
+		glEnd();
+
+		glPopAttrib();
+		glEnable(GL_LIGHTING);
+	}
+
+	// Draws all lines in the LineList
+	void DebugScreen::drawAllLines() {
+		for (LineList::iterator it = lines_to_draw.begin(); it != lines_to_draw.end(); ++it) {
+			// Nested pairs; consists of <Coordinate-Pair<PointA, PointB>, Colour>
+			drawLine(it->first.first, it->first.second, it->second);
+		}
+	}
+
+	void DebugScreen::putLine(const Vec3Df & origin, const Vec3Df & dest, Vec3Df colour) {
+		lines_to_draw.push_back(ColouredLine(Line(origin, dest), colour));
+	}
+

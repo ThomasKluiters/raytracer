@@ -26,6 +26,7 @@ void FilmPlane::setPixel(unsigned int x, unsigned int y, Vec3Df colourData)
 
 void FilmPlane::writeToDisk(std::string fileName)
 {
+	std::cout << "Write operation started" << std::endl;
 	Image result(width, height);
 	float r, g, b;
 	for (int i = 0; i < imageData.size(); i++) {
@@ -37,6 +38,7 @@ void FilmPlane::writeToDisk(std::string fileName)
 		}
 	}
 	result.writeImage(fileName.data());
+	std::cout << "Write operation completed" << std::endl;
 }
 
 /**
@@ -84,3 +86,5 @@ int FilmPlane::getFilmWidth()
 {
 	return imageData[0].size();
 }
+
+

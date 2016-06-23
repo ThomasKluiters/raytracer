@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="AreaLight.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DebugScreen.h" />
     <ClInclude Include="FilmPlane.h" />
     <ClInclude Include="imageWriter.h" />
     <ClInclude Include="Lens.h" />
@@ -30,6 +31,7 @@
   <ItemGroup>
     <ClCompile Include="AreaLight.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DebugScreen.cpp" />
     <ClCompile Include="FilmPlane.cpp" />
     <ClCompile Include="Lens.cpp" />
     <ClCompile Include="LensElement.cpp" />

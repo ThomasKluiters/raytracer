@@ -1,9 +1,18 @@
 #ifndef DEBUGSCREEN_H
 #define DEBUGSCREEN_H
+#pragma once
 #include <string.h>
 #include <map>
 #include <chrono>
+#include <vector>
 #include "Vec3D.h"
+
+// Nested pairs? hmm evil but the first nested pair is the pair of coordinates and the second Vec3Df
+// is the colour
+typedef std::pair <Vec3Df, Vec3Df> Line;
+typedef std::pair <Line, Vec3Df> ColouredLine;
+typedef std::vector <ColouredLine> LineList;
+
 
 class DebugScreen
 {
@@ -28,6 +37,18 @@ public:
 
 	void drawLineHR(int offset_y);
 	void drawLineVR(int offset_x);
+	void drawCameraShape(Vec3Df location);
+
+	void indicateOrigin();
+
+	void drawLine(const Vec3Df & origin, const Vec3Df & dest, const Vec3Df color, float alpha);
+
+	void drawLine(const Vec3Df & origin, const Vec3Df & dest, const Vec3Df color);
+
+	void drawAllLines();
+
+	void putLine(const Vec3Df & origin, const Vec3Df & dest, Vec3Df colour);
+	void drawPlane(const Vec3Df & position, float height, float width);
 
 	std::string rayTraceProgress(float progressPercentage);
 	float renderProgress;
@@ -40,6 +61,7 @@ private:
 	std::map <std::string, std::chrono::duration<double> > durations;
 	std::map <std::string, Vec3Df*> vectors_to_display;
 	std::map <std::string, float> floats_to_display;
+	LineList lines_to_draw;
 
 	void * Debug_font;
 	unsigned int * x_resolution;

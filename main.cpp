@@ -24,11 +24,15 @@
 #include "traqueboule.h"
 #include "Light.h"
 #include <iterator>
+
+#ifndef _LIGHTS
+#define _LIGHTS
+#include "Light.h"
 #include "SpotLight.h"
-#ifndef _CAMERA
-#define _CAMERA
-#include "Camera.h"
 #endif
+
+
+
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -45,19 +49,28 @@ std::vector<Vec3Df> MyLightPositions;
 Mesh MyMesh;						// Main mesh
 unsigned int WindowSize_X = 1440;	// X-resolution
 unsigned int WindowSize_Y = 900;	// Y-resolution
+bool rendering = false;
 
+std::string sceneData = "DoF-test.obj";
+std::string renderOutput = "result.ppm";
 #define NUM_THREADS 16              // Max number of threads
-#define ANTIALIASING true
+#define ANTIALIASING false
 
 Camera myCamera = Camera(WindowSize_X, WindowSize_Y, MyCameraPosition, 
 						Vec3Df(0.0,1.0,0.0), 50.0, 11.0, 8.0);
+
+DebugScreen myDebugScreen = DebugScreen(sceneData, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
+
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
  */
 void drawFrame()
 {
-    yourDebugDraw();
+	myDebugScreen.putInt("Vertices", MyMesh.vertices.size());
+	myDebugScreen.putInt("Lights", MyLightPositions.size());
+	myDebugScreen.putBool("Rendering", rendering);
+    yourDebugDraw();	
 }
 
 
@@ -73,6 +86,8 @@ void animate()
 void display(void);
 void reshape(int w, int h);
 void keyboard(unsigned char key, int x, int y);
+
+void rayTraceStart(Vec3Df origin00, Vec3Df dest00, Vec3Df origin01, Vec3Df dest01, Vec3Df origin10, Vec3Df dest10, Vec3Df origin11, Vec3Df dest11);
 
 /**
  * Main function.
@@ -128,8 +143,16 @@ int main(int argc, char** argv)
     glutMouseFunc(tbMouseFunc);    // trackball
     glutMotionFunc(tbMotionFunc);  // uses mouse
     glutIdleFunc(animate);
-    
-    init();
+	
+
+	myDebugScreen.putBool("AA", ANTIALIASING);
+	myDebugScreen.putInt("Max threads", NUM_THREADS);
+	myDebugScreen.putString("Mode", "default");
+	myDebugScreen.putVector("Camera Position", &myCamera.camPos);
+	myDebugScreen.putVector("Camera 'LookAt", &myCamera.lookAtPos);
+	myDebugScreen.putString("Render Output", renderOutput);
+
+    init(&myCamera, &myDebugScreen);
     
     // Main loop for glut. This just runs your application.
     glutMainLoop();
@@ -178,9 +201,10 @@ void reshape(int w, int h)
     glViewport(0, 0, (GLsizei)w, (GLsizei)h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    
+	WindowSize_X = w;
+	WindowSize_Y = h;
     //glOrtho (-1.1, 1.1, -1.1,1.1, -1000.0, 1000.0);
-    gluPerspective(50, (float)w / h, 0.01, 10);
+    gluPerspective(50, (float)w / h, 0.01, 60);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -223,7 +247,7 @@ void performRaytracingYRange(unsigned int start,
                              Vec3Df dest01,
                              Vec3Df dest10,
                              Vec3Df dest11,
-                             Image *result,
+                             FilmPlane * sensor,
                              int threadNumber,
                              std::vector<float> *progress
                              ) {
@@ -278,7 +302,7 @@ void performRaytracingYRange(unsigned int start,
             // Launch raytracing for the given ray.
                        
             // Store the result in an image.
-            result->setPixel(x, y, RGBValue(rgb[0], rgb[1], rgb[2]));
+            sensor->setPixel(x, y, rgb);
         }
     }
     
@@ -344,125 +368,43 @@ void keyboard(unsigned char key, int x, int y)
 
             // Click 'r'.
         case 'r':
-        {
-            // Pressing r will launch the raytracing.
-            cout << "Raytracing" << endl;
-            
-            // Produce the rays for each pixel, by first computing the rays for the corners of the frustum.
-            Vec3Df origin00, dest00;
-            Vec3Df origin01, dest01;
-            Vec3Df origin10, dest10;
-            Vec3Df origin11, dest11;
-            
-            produceRay(0, 0, &origin00, &dest00);
-            produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
-            produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
-            produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
-            
-		cout << origin00 << " | " << dest00 <<endl;
-		cout << origin01 << " | " << dest01 << endl;
-		cout << origin10 << " | " << dest10 << endl;
-		cout << origin11 << " | " << dest11 << endl;
+		{
+			if (rendering) {
+				return;
+			}
+			else {
+				rendering = true;
+				Vec3Df origin00, dest00;
+				Vec3Df origin01, dest01;
+				Vec3Df origin10, dest10;
+				Vec3Df origin11, dest11;
 
-		// Find Middle at-vector
-		float mx = 1.0f - float(x) / ((WindowSize_X - 1) / 2);
-		float my = 1.0f - float(y) / ((WindowSize_Y - 1) / 2);
+				produceRay(0, 0, &origin00, &dest00);
+				produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
+				produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
+				produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
 
-		Vec3Df at_vec = my*(mx*origin00 + (1 - mx)*origin10) +
-			(1 - my)*(mx*origin01 + (1 - mx)*origin11);
+				cout << origin00 << " | " << dest00 << endl;
+				cout << origin01 << " | " << dest01 << endl;
+				cout << origin10 << " | " << dest10 << endl;
+				cout << origin11 << " | " << dest11 << endl;
 
-		// I'm NOT normalizing the at-vector, because otherwise I have to hassle around to find the backplane distance.
-		//at_vec.normalize();
+				// Find Middle at-vector
+				float mx = 1.0f - float(x) / ((WindowSize_X - 1) / 2);
+				float my = 1.0f - float(y) / ((WindowSize_Y - 1) / 2);
 
-            
-            
-            // Vector to store threads
-            std::vector<std::thread> precomputeThreads;
-            
-            // Precompute values for triangles
-            std::time_t startTimePrecompute = std::time(nullptr);
-            
-            unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
-            
-            for (unsigned int t = 0; t < NUM_THREADS; ++t) {
-                
-                if ( (t * trianglesPerThread) < MyMesh.triangles.size() ) {
-                
-                    std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
-                
-                    precomputeThreads.push_back(std::thread(
-                                              precomputeTriangleValues,
-                                              begin,
-                                              trianglesPerThread
-                                  ));
-                    
-                }
-            }
-                                           
-            // Join all ray tracing threads
-            for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread) {
-                thread->join();
-            }
-            std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
-            
+				Vec3Df at_vec = my*(mx*origin00 + (1 - mx)*origin10) +
+					(1 - my)*(mx*origin01 + (1 - mx)*origin11);
+			
+				thread sattelite(rayTraceStart, origin00, dest00,
+								origin01, dest01,
+								origin10, dest10,
+								origin11, dest11);
+			}
+			break;
+		}
 
-            // Starting time, used to display running time
-            std::time_t startTime = std::time(nullptr);
-            
-            // Thread size
-            unsigned int numberOfYPixelsInThread = ceil(WindowSize_Y / NUM_THREADS);
-            
-            // Vector to store threads
-            std::vector<std::thread> threads;
-            
-            // Vector to store progress of the threads
-            std::vector<float> progress (NUM_THREADS, 0.f);
-            
-            bool rayTracingDone = false;
-            
-            // Create thread that prints progress
-            std::thread progressThread(printProgress, &progress, &rayTracingDone);
-            
-            // Create threads for the actual ray tracing
-            for (unsigned int t = 0; t < NUM_THREADS; ++t) {
-                
-                threads.push_back(std::thread(
-                                     performRaytracingYRange,
-                                     t * numberOfYPixelsInThread, // start
-                                     (t+1) * numberOfYPixelsInThread, // end
-                                     origin00,
-                                     origin01,
-                                     origin10,
-                                     origin11,
-                                     dest00,
-                                     dest01,
-                                     dest10,
-                                     dest11,
-                                     &result,
-                                     t,
-                                     &progress
-                ));
-             
-            }
-            
-            
-            // Join all ray tracing threads
-            for (std::vector<std::thread>::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
-                thread->join();
-            }
-            
-            rayTracingDone = true;
-            
-            // Store result
-            result.writeImage("result.ppm");
-            
-            progressThread.join();
-            
-            // Print running time
-            std::cout << "The rendering took " << std::time(nullptr) - startTime << " seconds" << std::endl;
-            
-            break;
-        }
+	
 	case 'a':
 		cout << "Dumping Colour Buffer" << endl;
 		myCamera.sensor.writeToDisk("buffer.ppm");
@@ -478,4 +420,101 @@ void keyboard(unsigned char key, int x, int y)
     produceRay(x, y, &testRayOrigin, &testRayDestination);
     
     yourKeyboardFunc(key, x, y, testRayOrigin, testRayDestination);
+}
+
+
+void rayTraceStart(	Vec3Df origin00, Vec3Df dest00,
+					Vec3Df origin01, Vec3Df dest01,
+					Vec3Df origin10, Vec3Df dest10,
+					Vec3Df origin11, Vec3Df dest11
+					) 
+{
+	cout << "Scaled render-plane to " << WindowSize_X << " x " << WindowSize_Y << endl;
+	myCamera.sensor.resizeImagePlane(WindowSize_X, WindowSize_Y);
+
+	// Pressing r will launch the raytracing.
+	cout << "Raytracing" << endl;
+
+	// Vector to store threads
+	std::vector<std::thread> precomputeThreads;
+
+	// Precompute values for triangles
+	std::time_t startTimePrecompute = std::time(nullptr);
+
+	unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
+
+	for (unsigned int t = 0; t < NUM_THREADS; ++t) {
+
+		if ((t * trianglesPerThread) < MyMesh.triangles.size()) {
+
+			std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
+
+			precomputeThreads.push_back(std::thread(
+				precomputeTriangleValues,
+				begin,
+				trianglesPerThread
+			));
+
+		}
+	}
+
+	// Join all ray tracing threads
+	for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread) {
+		thread->join();
+	}
+	std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
+
+
+	// Starting time, used to display running time
+	std::time_t startTime = std::time(nullptr);
+
+	// Thread size
+	unsigned int numberOfYPixelsInThread = ceil(WindowSize_Y / NUM_THREADS);
+
+	// Vector to store threads
+	std::vector<std::thread> threads;
+
+	// Vector to store progress of the threads
+	std::vector<float> progress(NUM_THREADS, 0.f);
+
+	bool rayTracingDone = false;
+
+	// Create thread that prints progress
+	std::thread progressThread(printProgress, &progress, &rayTracingDone);
+
+	// Create threads for the actual ray tracing
+	for (unsigned int t = 0; t < NUM_THREADS; ++t) {
+
+		threads.push_back(std::thread(
+			performRaytracingYRange,
+			t * numberOfYPixelsInThread, // start
+			(t + 1) * numberOfYPixelsInThread, // end
+			origin00,
+			origin01,
+			origin10,
+			origin11,
+			dest00,
+			dest01,
+			dest10,
+			dest11,
+			&myCamera.sensor,
+			t,
+			&progress
+		));
+
+	}
+
+
+	// Join all ray tracing threads
+	for (std::vector<std::thread>::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
+		thread->join();
+	}
+
+	rayTracingDone = true;
+	progressThread.join();
+
+	myCamera.sensor.writeToDisk("result.ppm");
+
+	// Print running time
+	std::cout << "The rendering took " << std::time(nullptr) - startTime << " seconds" << std::endl;
 }
