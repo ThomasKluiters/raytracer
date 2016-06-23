@@ -59,7 +59,7 @@ std::string renderOutput = "result.ppm";
 Camera myCamera = Camera(WindowSize_X, WindowSize_Y, MyCameraPosition, 
 						Vec3Df(0.0,1.0,0.0), 50.0, 11.0, 8.0);
 
-DebugScreen myDebugScreen = DebugScreen(sceneData, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
+DebugScreen myDebugScreen = DebugScreen(sceneData, &myCamera, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
 
 
 /**
@@ -343,10 +343,28 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
  */
 void keyboard(unsigned char key, int x, int y)
 {
+
     printf("key %d pressed at %d,%d\n", key, x, y);
     fflush(stdout);
     switch (key)
     {
+
+		case 'u':
+		{
+			myDebugScreen.toggleRenderOverlay();
+			break;
+		}
+
+		// Put all concurrent-dangerous operations below this guard please :)
+		if (rendering)
+			break;
+
+		case 'k':
+		{
+			Vec3Df mag = Vec3Df(0.0, 0.0, 0.0) - getCameraPosition();
+			cout << "Length to origin is: " << mag.getLength() << endl;
+			break;
+		}
             
             // Press 'L'.
         case 'L':

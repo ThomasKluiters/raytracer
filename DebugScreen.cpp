@@ -12,8 +12,9 @@
 using namespace std;
 typedef std::map<std::string, std::chrono::duration<double> > chronomap;
 
-DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned int * y_res, void * font)
+DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_res, unsigned int * y_res, void * font)
 {
+	camera = cam;
 	sceneData = scenedata;
 	durations = durations;
 	x_resolution = x_res;
@@ -24,6 +25,7 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	CURRENT_Y_OFFSET = BORDER_OFFSET;
 	color_text = Vec3Df(0.6, 0.6, 0.0);
 	show_overlay = true;
+	SHOW_RENDER_BUFFER = false;
 }
 
 	// Converts boolean to string.
@@ -257,7 +259,7 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	void DebugScreen::putVector(std::string description, Vec3Df * vector) 
 	{
 		vectors_to_display[description] = vector;
-		cout << "Loaded \n " << format(description, vector) << endl;
+		//cout << "Loaded \n " << format(description, vector) << endl;
 	}
 
 	// Puts the given description / Chrono duration in the map
@@ -276,6 +278,11 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	void DebugScreen::toggleOverlay() 
 	{
 		show_overlay = !show_overlay;
+	}
+
+	void DebugScreen::toggleRenderOverlay()
+	{
+		SHOW_RENDER_BUFFER = !SHOW_RENDER_BUFFER;
 	}
 
 	void DebugScreen::drawLineHR(int offset_x) 
@@ -330,6 +337,8 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 			printFloats(X_OFFSET);
 
 			printVectors(X_OFFSET);
+
+			if(SHOW_RENDER_BUFFER) setupScreenTexture();
 			popGL();
 		}
 	}
@@ -401,7 +410,8 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 		glEnable(GL_LIGHTING);
 	}
 
-	void DebugScreen::drawPlane(const Vec3Df &origin, float height, float width) {
+	void DebugScreen::drawPlane(const Vec3Df &origin, float height, float width) 
+	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
 		glEnable(GL_BLEND);
@@ -449,7 +459,8 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 	}
 
 
-	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color, float alpha) {
+	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color, float alpha) 
+	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
 
@@ -463,7 +474,8 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 		glEnable(GL_LIGHTING);
 	}
 
-	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color) {
+	void DebugScreen::drawLine(const Vec3Df &origin, const Vec3Df &dest, const Vec3Df color) 
+	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
 
@@ -479,13 +491,44 @@ DebugScreen::DebugScreen(std::string scenedata, unsigned int * x_res, unsigned i
 
 	// Draws all lines in the LineList
 	void DebugScreen::drawAllLines() {
-		for (LineList::iterator it = lines_to_draw.begin(); it != lines_to_draw.end(); ++it) {
+		for (LineList::iterator it = lines_to_draw.begin(); it != lines_to_draw.end(); ++it)
+		{
 			// Nested pairs; consists of <Coordinate-Pair<PointA, PointB>, Colour>
 			drawLine(it->first.first, it->first.second, it->second);
 		}
 	}
 
-	void DebugScreen::putLine(const Vec3Df & origin, const Vec3Df & dest, Vec3Df colour) {
+	void DebugScreen::putLine(const Vec3Df & origin, const Vec3Df & dest, Vec3Df colour) 
+	{
 		lines_to_draw.push_back(ColouredLine(Line(origin, dest), colour));
+	}
+
+	void DebugScreen::setupScreenTexture() 
+	{
+		if(camera) {
+			if(camera->sensor.isReady()) {
+				glScalef(0.6, 0.6, 0.6);
+				int x_start, y_start;
+				x_start = *x_resolution - (*x_resolution * 0.39);
+				y_start = *y_resolution - (*y_resolution * 0.39);
+				glRasterPos2i(x_start, y_start);
+				glPointSize(1);
+				glBegin(GL_POINTS);
+				
+				for (int i = 0; i < camera->sensor.getFilmWidth(); i++) {
+					for (int p = 0; p < camera->sensor.getFilmHeight(); p++) {
+						glColor3f(camera->sensor.imageData[i][p][0],			// Accessing the image-data in the sensor of the camera
+							camera->sensor.imageData[i][p][1],					// It's a Vec3Df inside a double stl vector.
+							camera->sensor.imageData[i][p][2]					// First two brackets are width/height; third is (one of the three) component of the mathematical vector.
+						);
+						glVertex2i(x_start + i, y_start + p);
+					}
+				}
+				glEnd();
+			}	
+		} 
+		else {
+			cout << "WARNING: CAMERA UNDEFINED" << endl;
+		}
 	}
 

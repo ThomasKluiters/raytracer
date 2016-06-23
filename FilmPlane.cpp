@@ -11,6 +11,7 @@ FilmPlane::FilmPlane(unsigned int w, unsigned int h)
 	height = h;
 	width = w;
 	initImagePlane();
+	ready = false;
 }
 
 
@@ -26,6 +27,11 @@ void FilmPlane::setPixel(unsigned int x, unsigned int y, Vec3Df colourData)
 
 void FilmPlane::writeToDisk(std::string fileName)
 {
+	if (!ready) {
+		std::cout << "WARNING - Do not call WRITE-TO-DISK from FILMPLANE without initializing imageData!" << std::endl;
+		return;
+	}
+
 	std::cout << "Write operation started" << std::endl;
 	Image result(width, height);
 	float r, g, b;
@@ -53,6 +59,7 @@ void FilmPlane::initImagePlane()
 			imageData[i].resize(height);
 			std::fill(imageData[i].begin(), imageData[i].end(), baseColour);
 		}
+		ready = true;
 	}
 	else 
 	{
@@ -77,13 +84,22 @@ void FilmPlane::resizeImagePlane(unsigned int w, unsigned int h)
 	initImagePlane();
 }
 
-int FilmPlane::getFilmHeight()
-{
-	return imageData.size();
-}
-
 int FilmPlane::getFilmWidth()
 {
+	if (!ready) return -1;
+
+	return imageData.size();
+
+}
+
+bool FilmPlane::isReady() {
+	return ready;
+}
+
+int FilmPlane::getFilmHeight()
+{
+	if (!ready) return -1;
+
 	return imageData[0].size();
 }
 

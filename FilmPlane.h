@@ -26,8 +26,10 @@ public:
 	void resizeImagePlane(unsigned int width, unsigned int height);
 	int getFilmHeight();
 	int getFilmWidth();
+	bool isReady();
 
 private:
+	bool ready;
 	unsigned int height;
 	unsigned int width;
 	const Vec3Df baseColour = Vec3Df(0.0, 0.3, 0.8);	// Base colour of image

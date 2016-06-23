@@ -1,11 +1,13 @@
 #ifndef DEBUGSCREEN_H
 #define DEBUGSCREEN_H
 #pragma once
+#pragma once
 #include <string.h>
 #include <map>
 #include <chrono>
 #include <vector>
 #include "Vec3D.h"
+#include "Camera.h"
 
 // Nested pairs? hmm evil but the first nested pair is the pair of coordinates and the second Vec3Df
 // is the colour
@@ -18,7 +20,7 @@ class DebugScreen
 {
 
 public:
-	DebugScreen(std::string scenedata, unsigned int * x_res, unsigned int * y_res, void * font);
+	DebugScreen(std::string scenedata, Camera * camera, unsigned int * x_res, unsigned int * y_res, void * font);
 
 	void putString(std::string description, std::string value);
 	void putBool(std::string description, bool value);
@@ -31,6 +33,7 @@ public:
 
 	std::string sceneData;
 	void toggleOverlay();
+	void toggleRenderOverlay();
 	void traceUpdate(float value);
 	void traceEnd();
 
@@ -48,6 +51,7 @@ public:
 	void drawAllLines();
 
 	void putLine(const Vec3Df & origin, const Vec3Df & dest, Vec3Df colour);
+	void setupScreenTexture();
 	void drawPlane(const Vec3Df & position, float height, float width);
 
 	std::string rayTraceProgress(float progressPercentage);
@@ -62,6 +66,7 @@ private:
 	std::map <std::string, Vec3Df*> vectors_to_display;
 	std::map <std::string, float> floats_to_display;
 	LineList lines_to_draw;
+	Camera *camera;
 
 	void * Debug_font;
 	unsigned int * x_resolution;
@@ -71,6 +76,8 @@ private:
 
 	// Dynamic settings
 	int CURRENT_Y_OFFSET;		// Indicates the current distance from the top of the window.
+	bool SHOW_RENDER_BUFFER;
+
 
 	// Manual settings.
 	const int CHAR_OFFSET = 18;						 // Offset in pixels between each line drawn

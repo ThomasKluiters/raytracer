@@ -35,6 +35,7 @@ extern unsigned int WindowSize_X;//window resolution width
 extern unsigned int WindowSize_Y;//window resolution height
 extern unsigned int RayTracingResolutionX;  // largeur fenetre
 extern unsigned int RayTracingResolutionY;  // largeur fenetre
+extern bool rendering;
 
 //use this function for any preprocessing of the mesh.
 void init(Camera * camera, DebugScreen * debugScreen);

@@ -314,6 +314,10 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 */
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination)
 {
+	if (rendering) {
+		return;
+	}
+
 	//here, as an example, I use the ray to fill in the values for my upper global ray variable
 	//I use these variables in the debugDraw function to draw the corresponding ray.
 	//try it: Press a key, move the camera, see the ray that was launched as a line.
@@ -343,7 +347,6 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0,0.6,0.0));
 		draw = false;
 	}
-
 
 	if (t == 'z') {
 		clearAllLines();
