@@ -41,7 +41,7 @@ unsigned int WindowSize_X = 1440;	// X-resolution
 unsigned int WindowSize_Y = 900;	// Y-resolution
 
 #define NUM_THREADS 16              // Max number of threads
-#define ANTIALIASING true
+#define ANTIALIASING false
 
 /**
  * Drawing function, which draws an image (frame) on the screen.

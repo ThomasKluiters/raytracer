@@ -78,7 +78,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 	const int material = MyMesh.triangleMaterials[triangle];
 
 	Vec3Df normal = intersection.normal;
-	Vec3Df inv_normal = -1.0f * normal;
 	Vec3Df location = intersection.position;
 	Vec3Df localColor = MyMesh.materials[material].Ka();
 
@@ -88,7 +87,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		localColor = localColor + softshading(location, normal, origin, light, material);
 	}
 
-	if (depth < 6) {
+	if (depth < 6 && false) {
 		Vec3Df N = intersection.normal;
 		N.normalize();
 
