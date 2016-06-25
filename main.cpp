@@ -43,12 +43,15 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 500;	// X-resolution
-unsigned int WindowSize_Y = 500;	// Y-resolution
+unsigned int WindowSize_X = 1440;	// X-resolution
+unsigned int WindowSize_Y = 900;	// Y-resolution
+
+#define ANTIALIASING false
 
 #define NUM_THREADS 18              // Max number of threads
 #define NUM_BLOCKS_X 6              // Number of blocks in x direction
 #define NUM_BLOCKS_Y 3              // Number of blocks in y direction
+
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
@@ -240,18 +243,44 @@ void performRaytracingBlock( unsigned int xStart,
             localProgress = ( (float) y - yStart) / (yEnd - yStart) + (1.0f / (yEnd - yStart)) * ( (float) x / (xEnd - 1) );
             (*progress)[threadNumber] = localProgress;
             
-            // Produce the rays for each pixel, by interpolating the four rays of the frustum corners.
-            float xscale = 1.0f - float(x) / (WindowSize_X - 1);
-            float yscale = 1.0f - float(y) / (WindowSize_Y - 1);
-            
-            origin = yscale*(xscale*origin00 + (1 - xscale)*origin10) +
-            (1 - yscale)*(xscale*origin01 + (1 - xscale)*origin11);
-            dest = yscale*(xscale*dest00 + (1 - xscale)*dest10) +
-            (1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
-            
+			Vec3Df rgb(0, 0, 0);
+
+			if (ANTIALIASING)
+			{
+				for (float xOffset = -0.5f; xOffset <= 0.5f; xOffset += 0.5f)
+				{
+					for (float yOffset = -0.5f; yOffset <= 0.5f; yOffset += 0.5f)
+					{
+						// Produce the rays for each pixel, by interpolating the four rays of the frustum corners.
+						float xscale = 1.0f - (float(x) + xOffset) / (WindowSize_X - 1);
+						float yscale = 1.0f - (float(y) + yOffset) / (WindowSize_Y - 1);
+
+						origin = yscale*(xscale*origin00 + (1 - xscale)*origin10) +
+							(1 - yscale)*(xscale*origin01 + (1 - xscale)*origin11);
+						dest = yscale*(xscale*dest00 + (1 - xscale)*dest10) +
+							(1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
+
+						rgb = rgb + performRayTracing(origin, dest, 0);
+					}
+				}
+
+				rgb = rgb / 9.0f;
+			}
+			else
+			{
+				float xscale = 1.0f - (float(x)) / (WindowSize_X - 1);
+				float yscale = 1.0f - (float(y)) / (WindowSize_Y - 1);
+
+				origin = yscale*(xscale*origin00 + (1 - xscale)*origin10) +
+					(1 - yscale)*(xscale*origin01 + (1 - xscale)*origin11);
+				dest = yscale*(xscale*dest00 + (1 - xscale)*dest10) +
+					(1 - yscale)*(xscale*dest01 + (1 - xscale)*dest11);
+				
+				rgb = performRayTracing(origin, dest - origin, 0);
+			}
+
             // Launch raytracing for the given ray.
-            Vec3Df rgb = performRayTracing(origin, dest);
-            
+                       
             // Store the result in an image.
             result->setPixel(x, y, RGBValue(rgb[0], rgb[1], rgb[2]));
         }
@@ -269,8 +298,7 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     while(! *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
-        std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
-        
+        std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;       
 #ifdef _WIN32
 		Sleep(500);
 #else
