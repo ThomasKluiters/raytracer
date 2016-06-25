@@ -19,15 +19,12 @@
 #include <ctime>
 #include <map>
 #include <numeric>
-<<<<<<< HEAD
-=======
 #ifdef _WIN32
 #include <io.h>
 #include <Windows.h>
 #else
 #include <unistd.h>
 #endif
->>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
@@ -46,20 +43,15 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-<<<<<<< HEAD
 unsigned int WindowSize_X = 1440;	// X-resolution
 unsigned int WindowSize_Y = 900;	// Y-resolution
 
-#define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING false
-=======
-unsigned int WindowSize_X = 500;	// X-resolution
-unsigned int WindowSize_Y = 500;	// Y-resolution
 
 #define NUM_THREADS 18              // Max number of threads
 #define NUM_BLOCKS_X 6              // Number of blocks in x direction
 #define NUM_BLOCKS_Y 3              // Number of blocks in y direction
->>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
+
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
@@ -306,16 +298,12 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     while(! *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
-        std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
-<<<<<<< HEAD
-=======
-        
+        std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;       
 #ifdef _WIN32
 		Sleep(500);
 #else
 		usleep(500000);
 #endif
->>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
     }
     
     std::cout << "100 %" << std::endl;
