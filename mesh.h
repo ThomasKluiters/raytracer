@@ -2,59 +2,129 @@
 #define MESH_H_sdfjlasdfjfsdfjljfasdf
 
 #include "Vertex.h"
+#include <math.h>
 #include <vector>
 #include <map>
 #include <string>
+#include <random>
 
+# define PI           3.14159265358979323846
 
+using namespace std;
+
+struct LightRay
+{
+	Vec3Df & source;
+	Vec3Df direction;
+	Vec3Df & power;
+};
 
 class Light
 {
 public:
-	Light() {};
 
-	Light(Vec3Df a, Vec3Df b, Vec3Df c) {
-		p1 = a;
-		p2 = b;
-		p3 = c;
-		v1 = b - a;
-		v2 = c - a;
-	};
+	Light(Vec3Df pos, Vec3Df pow) : position(pos), power(pow) {}
 
-	void create(Vec3Df normal, Vec3Df origin) {
+	virtual void emit(int count, vector<LightRay> ray) = 0;
 
-		v1 = Vec3Df(1, normal[0] / normal[1], 0);
-		v1.normalize();
-		v2 = Vec3Df::crossProduct(normal,v1);
-
-		p1 = origin;
-		p2 = origin + v1;
-		p3 = origin + v2;
+	Vec3Df position;
+	Vec3Df power;
 
 
-	}
-	
-	std::vector<Vec3Df> lights(int sides)
-	{
-		std::vector<Vec3Df> lights;
-		float partition = 1.0f / sides;
-		for (int i = 0; i < sides; ++i) {
-			for (int j = 0; j < sides; ++j) {
-				double r1 = ((double)rand() / (RAND_MAX));
-				double r2 = ((double)rand() / (RAND_MAX));
-				float x = partition * (i + r1);
-				float y = partition * (j + r2);
-				lights.push_back(p1 + x * v1 + y * v2);
-			}
-		}
-		return lights;
-	}
-	
+};
+
+class PointLight : Light
+{
 
 private:
-	Vec3Df p1, p2, p3;
-	Vec3Df v1, v2;
+	Vec3Df normal;
 
+public:
+
+	mt19937 engine;
+	uniform_real_distribution<float> distribution;
+
+	PointLight(Vec3Df pos, Vec3Df pow) :
+		Light(pos, pow)
+	{
+		random_device rd;
+
+		engine = mt19937(rd());
+
+		distribution = uniform_real_distribution<float>(-1.0f, 1.0f);
+	}
+
+	void emit(int samples, vector<LightRay> rays)
+	{
+		for (int i = 0; i < samples; i++)
+		{
+			float x, y, z;
+
+			do
+			{
+				x = distribution(engine);
+				y = distribution(engine);
+				z = distribution(engine);
+			} while (x * x + y * y + z * z > 1.0f);
+
+			Vec3Df direction(x, y, z);
+			direction.normalize();
+
+			rays.push_back({
+				position,
+				direction,
+				power
+			});
+		}
+	}
+
+};
+
+class SquareLight : Light
+{
+
+private:
+	float size;
+
+	Vec3Df normal;
+	Vec3Df u;
+	Vec3Df v;
+
+	mt19937 engine;
+	uniform_real_distribution<float> pDistribution;
+	uniform_real_distribution<float> nDistrubution;
+
+public:
+
+	SquareLight(Vec3Df pos, Vec3Df pow, Vec3Df normal, float size) :
+		Light(pos, pow),
+		normal(normal), size(size)
+	{
+		random_device rd;
+
+		engine = mt19937(rd());
+		
+		pDistribution = uniform_real_distribution<float>(size * -0.5f, size * 0.5f);
+		nDistrubution = uniform_real_distribution<float>(0, 1.0f);
+	}
+
+	void emit()
+	{
+		float xOffset = pDistribution(engine);
+
+		float u1 = nDistrubution(engine);
+		float u2 = nDistrubution(engine);
+
+		float r     = sqrtf(u1);
+		float theta = 2 * PI * u2;
+
+		float x = r * cosf(theta);
+		float y = r * sinf(theta);
+		float z = sqrtf(fmaxf(0.0f, 1.0f - u1));
+
+		Vec3Df direction(x, y, z);
+		
+	}
 };
 
 

@@ -14,6 +14,7 @@
 #endif
 #include "raytracing.h"
 #include "KDTree.h"
+#include "PhotonMapping.h"
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
@@ -24,13 +25,17 @@ std::vector<Vec3Df> testArrayfinish;
 std::vector<Vec3Df> testArraycolor;
 
 int maxDepth;
+int photons = 1000;
 bool draw;
 
 std::vector<Light> lights;
 
 
-
 KDTree* tree;
+
+PhotonMap globalMap;
+PhotonMap causticMap;
+PhotonMap volumeMap;
 
 /**
 * Use this function for any preprocessing of the mesh.
@@ -59,6 +64,89 @@ void init()
 	tree = builder.build();
 }
 
+void emitPhotons()
+{
+	PhotonMapBuilder builder;
+
+	for (auto light : lights)
+	{
+		Vec3Df & power = light.power;
+		vector<LightRay> rays;
+
+		light.emit(photons, rays);
+
+		for (auto ray : rays)
+		{
+			tracePhoton(ray, builder, false);
+		}
+	}
+}
+
+void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic)
+{
+	Intersection intersection = tree->trace(ray.source, ray.direction, MyMesh.triangles, MyMesh.vertices);
+	const int materialIndex = MyMesh.triangleMaterials[intersection.triangle];
+	Material & material = MyMesh.materials[materialIndex];
+
+	Vec3Df diffuse = material.Kd();
+	Vec3Df specular = material.Kd();
+
+	float P_r = fmaxf(diffuse[0] + specular[0], fmaxf(diffuse[1] + specular[1], diffuse[2] + specular[2]));
+	float P_d = (diffuse[0] + diffuse[1] + diffuse[2]) / (diffuse[0] + diffuse[1] + diffuse[2] + specular[0] + specular[1] + specular[2]) * P_r;
+	float P_s = P_r - P_d;
+
+	if (material.has_Kd())
+	{
+		builder.add({
+			intersection.position,
+			ray.power,
+			0.1f,
+			0.1f,
+			0
+		});
+	}
+	
+	float r = rand() / (RAND_MAX + .0f);
+
+	if (r >= P_s + P_d)
+	{
+		return;
+	}
+
+	float D = 1.0f / P_s;
+
+	Vec3Df power(
+		ray.power[0] * specular[0] * D,
+		ray.power[1] * specular[1] * D,
+		ray.power[2] * specular[2] * D
+	);
+
+	if(r < P_s + P_d)
+	{
+		caustic = true;
+	}
+	
+	Vec3Df N = intersection.normal;
+	N.normalize();
+
+	Vec3Df R = -1.0f * ray.direction;
+	R.normalize();
+
+	Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+
+	Vec3Df & position = intersection.position;
+
+	tracePhoton(
+		{
+			position,
+			reflection,
+			power
+		},
+		builder,
+		caustic
+	);
+}
+
 /**
 * Return the color of your pixel.
 */
@@ -82,11 +170,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 	Vec3Df localColor = MyMesh.materials[material].Ka();
 
 
-	for (auto light : lights)
-	{
-		localColor = localColor + softshading(location, normal, origin, light, material);
-	}
-
 	if (depth < 6 && false) {
 		Vec3Df N = intersection.normal;
 		N.normalize();
@@ -109,17 +192,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 	return localColor;
 }
-
-
-Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material) {
-	std::vector<Vec3Df> lights = l.lights(5);
-	Vec3Df temp = Vec3Df(0, 0, 0);
-	for (int i = 0; i < lights.size(); ++i) {
-		temp = temp + lambertshading(location, normal, origin, lights[i], material);
-	}
-	return 1.0f / lights.size() * temp;
-}
-
 
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material) {
 	Vec3Df light_in = light - location;
@@ -167,8 +239,6 @@ bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest)
 	}
 	return false;
 }
-
-
 
 
 /**
@@ -243,33 +313,6 @@ void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color) {
 	}
 }
 
-void lichtbak(Vec3Df origin, Vec3Df dest) {
-	Vec3Df normal = dest - origin;
-	normal.normalize();
-	Vec3Df v1 = Vec3Df(1, normal[0] / normal[1], 0);
-	v1.normalize();
-	Vec3Df v2 = Vec3Df::crossProduct(normal, v1);
-	v2.normalize();
-	v1 = Vec3Df::crossProduct(normal, v2);
-	v1.normalize();
-	v1 = 0.2 * v1;
-	v2 = 0.2 * v2;
-
-	drawLine(origin, origin + normal, Vec3Df(1, 0, 0));
-	drawLine(origin, origin + v1, Vec3Df(0, 1, 1));
-	drawLine(origin, origin + v2, Vec3Df(0, 0, 1));
-	drawLine(origin + v1, origin + v1 + v2, Vec3Df(0, 0, 1));
-	drawLine(origin + v2, origin + v1 + v2, Vec3Df(0, 0, 1));
-
-	Light l(origin, origin + v1, origin + v2);
-	lights.push_back(l);
-
-
-}
-
-
-
-
 /**
 * yourKeyboardFunc is used to deal with keyboard input.
 *
@@ -314,9 +357,6 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 
 	if (t == 'n') {
 		draw = true;
-
-		lichtbak(rayOrigin, rayDestination);
-
 		draw = false;
 	}
 
