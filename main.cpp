@@ -19,6 +19,15 @@
 #include <ctime>
 #include <map>
 #include <numeric>
+<<<<<<< HEAD
+=======
+#ifdef _WIN32
+#include <io.h>
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+>>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
 #include "raytracing.h"
 #include "mesh.h"
 #include "traqueboule.h"
@@ -37,11 +46,20 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
+<<<<<<< HEAD
 unsigned int WindowSize_X = 1440;	// X-resolution
 unsigned int WindowSize_Y = 900;	// Y-resolution
 
 #define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING false
+=======
+unsigned int WindowSize_X = 500;	// X-resolution
+unsigned int WindowSize_Y = 500;	// Y-resolution
+
+#define NUM_THREADS 18              // Max number of threads
+#define NUM_BLOCKS_X 6              // Number of blocks in x direction
+#define NUM_BLOCKS_Y 3              // Number of blocks in y direction
+>>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
@@ -201,11 +219,14 @@ void produceRay(int x_I, int y_I, Vec3Df * origin, Vec3Df * dest)
     dest->p[2] = float(z);
 }
 
+
 /**
- * Perform ray tracing for a certain range of y pixels
+ * Perform ray tracing for a certain block.
  */
-void performRaytracingYRange(unsigned int start,
-                             unsigned int end,
+void performRaytracingBlock( unsigned int xStart,
+                             unsigned int xEnd,
+                             unsigned int yStart,
+                             unsigned int yEnd,
                              Vec3Df origin00,
                              Vec3Df origin01,
                              Vec3Df origin10,
@@ -222,12 +243,12 @@ void performRaytracingYRange(unsigned int start,
     Vec3Df origin, dest;
     float localProgress;
     
-    for (unsigned int y = start; y < end && y < WindowSize_Y; ++y) {
+    for (unsigned int y = yStart; y < yEnd && y < WindowSize_Y; ++y) {
         
-        for (unsigned int x = 0; x < WindowSize_X; ++x)
+        for (unsigned int x = xStart; x < xEnd && x < WindowSize_X; ++x)
         {
             // Progress indication
-            localProgress = ( (float) y - start) / (end - start) + (1.0f / (end - start)) * ( (float) x / (WindowSize_X - 1) );
+            localProgress = ( (float) y - yStart) / (yEnd - yStart) + (1.0f / (yEnd - yStart)) * ( (float) x / (xEnd - 1) );
             (*progress)[threadNumber] = localProgress;
             
 			Vec3Df rgb(0, 0, 0);
@@ -278,7 +299,7 @@ void performRaytracingYRange(unsigned int start,
 
 
 /**
-* Print progress of ray tracing
+* Print progress of ray tracing.
 **/
 void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     
@@ -286,6 +307,15 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
         std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
+<<<<<<< HEAD
+=======
+        
+#ifdef _WIN32
+		Sleep(500);
+#else
+		usleep(500000);
+#endif
+>>>>>>> 000cfda036e531a084fcc3a650326d83cc86d703
     }
     
     std::cout << "100 %" << std::endl;
@@ -336,8 +366,9 @@ void keyboard(unsigned char key, int x, int y)
             // Starting time, used to display running time
             std::time_t startTime = std::time(nullptr);
             
-            // Thread size
-            unsigned int numberOfYPixelsInThread = ceil(WindowSize_Y / NUM_THREADS);
+            // Block size
+            unsigned int numberOfXPixelsInBlock = ceil(WindowSize_X / NUM_BLOCKS_X);
+            unsigned int numberOfYPixelsInBlock = ceil(WindowSize_Y / NUM_BLOCKS_Y);
             
             // Vector to store threads
             std::vector<std::thread> threads;
@@ -351,12 +382,17 @@ void keyboard(unsigned char key, int x, int y)
             std::thread progressThread(printProgress, &progress, &rayTracingDone);
             
             // Create threads for the actual ray tracing
-            for (unsigned int t = 0; t < NUM_THREADS; ++t) {
+            for (unsigned int xBlock = 0; xBlock < NUM_BLOCKS_X; ++xBlock) {
                 
-                threads.push_back(std::thread(
-                                     performRaytracingYRange,
-                                     t * numberOfYPixelsInThread, // start
-                                     (t+1) * numberOfYPixelsInThread, // end
+                for (unsigned int yBlock = 0; yBlock < NUM_BLOCKS_Y; ++yBlock) {
+                
+                
+                    threads.push_back(std::thread(
+                                     performRaytracingBlock,
+                                     xBlock * numberOfXPixelsInBlock, // start x
+                                     (xBlock+1) * numberOfXPixelsInBlock, // end x
+                                     yBlock * numberOfYPixelsInBlock, // start y
+                                     (yBlock+1) * numberOfYPixelsInBlock, // end y
                                      origin00,
                                      origin01,
                                      origin10,
@@ -366,9 +402,12 @@ void keyboard(unsigned char key, int x, int y)
                                      dest10,
                                      dest11,
                                      &result,
-                                     t,
+                                     xBlock * NUM_BLOCKS_Y + yBlock, // thread number
                                      &progress
-                ));
+                    ));
+                    
+                    
+                }
              
             }
             
