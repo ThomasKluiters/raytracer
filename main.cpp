@@ -24,6 +24,7 @@
 #include "traqueboule.h"
 #include "imageWriter.h"
 #include <iterator>
+#include "Communication.h"
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -38,8 +39,13 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 1440;	// X-resolution
-unsigned int WindowSize_Y = 900;	// Y-resolution
+unsigned int WindowSize_X = 500;	// X-resolution
+unsigned int WindowSize_Y = 500;	// Y-resolution
+
+unsigned int startX = 0;
+unsigned int endX = 0;
+unsigned int startY = 0;
+unsigned int endY = 0;
 
 #define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING true
@@ -71,6 +77,7 @@ void keyboard(unsigned char key, int x, int y);
  */
 int main(int argc, char** argv)
 {
+    
     glutInit(&argc, argv);
     
     // Set up framebuffer.
@@ -120,6 +127,16 @@ int main(int argc, char** argv)
     glutMouseFunc(tbMouseFunc);    // trackball
     glutMotionFunc(tbMotionFunc);  // uses mouse
     glutIdleFunc(animate);
+    
+    
+    // Receive info from server
+    vector<int> bounds = Communication::receiveInitMessage();
+    WindowSize_X = bounds[0];
+    WindowSize_Y = bounds[1];
+    startX = bounds[2];
+    startY = bounds[3];
+    endX = bounds[4];
+    endY = bounds[5];
     
     init();
     
@@ -427,6 +444,8 @@ void keyboard(unsigned char key, int x, int y)
             
             // Store result
             result.writeImage("result.ppm");
+            
+            Communication::sendImage(result);
             
             progressThread.join();
             
