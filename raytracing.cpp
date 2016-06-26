@@ -14,12 +14,14 @@
 #endif
 #include "raytracing.h"
 #include "KDTree.h"
+#include <math.h>
+
+#define DEBUG_TEXTUREMAP    0   // 0: do not print debug info; 1: print debug info
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.)
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
 
-Texture texture;
 
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
@@ -47,7 +49,7 @@ void init()
     //model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj",
     //otherwise the application will not load properly
     //MyMesh.loadMesh("cube.obj", true);
-    texture = MyMesh.loadBMP("brickwall.bmp");
+    // MyMesh.loadBMP("brickwall.bmp");
     MyMesh.loadMesh("baksteen.obj", true);
     MyMesh.computeVertexNormals();
     
@@ -62,55 +64,89 @@ void init()
     tree = builder.build();
 }
 
+float areaTriangle(Vec3Df A, Vec3Df B) {
+    // formula for area of triangle in 3D
+    float c = 0.5 * sqrtf(((A[1]*B[2]) - (A[2]*B[1])) * ((A[1]*B[2]) - (A[2]*B[1])) +
+                          ((A[2]*B[0]) - (A[0]*B[2])) * ((A[2]*B[0]) - (A[0]*B[2])) +
+                          ((A[0]*B[1]) - (A[1]*B[0])) * ((A[0]*B[1]) - (A[1]*B[0])));
+    return c;
+}
+
+Vec3Df barycentricInterpolation(Vec3Df position, const int triangle)
+{
+    Vec3Df baryCoordinates = Vec3Df(0,0,0); // initialize baryCoordinates at Origin
+    
+    Triangle tri = MyMesh.triangles[triangle]; // retrieve triangle from MyMesh
+    
+    // retrieve vertices of triangle
+    Vec3Df a = MyMesh.vertices[tri.v[0]].p; // a = v[0]
+    Vec3Df b = MyMesh.vertices[tri.v[1]].p; // b = v[1]
+    Vec3Df c = MyMesh.vertices[tri.v[2]].p; // c = v[2]
+    
+    // determine sides of the triangles for interpolation
+    Vec3Df ab = b - a;
+    Vec3Df ac = c - a;
+    Vec3Df bc = c - b;
+    
+    Vec3Df ap = position - a;
+    Vec3Df bp = position - b;
+    Vec3Df cp = position - c;
+    
+    // calcluate the areas for the triangles ABC, APB, BPC, APC
+    // calculate the weights for the baryCoordinates
+    float areaTotal = areaTriangle(ab, ac);
+    baryCoordinates[0] = areaTriangle(bc, bp) / areaTotal; // weightA = area BPC / area ABC
+    baryCoordinates[1] = areaTriangle(ac, cp) / areaTotal; // weightB = area APC / area ABC
+    baryCoordinates[2] = areaTriangle(ab, ap) / areaTotal; // weightC = area APB / area ABC
+    
+    return baryCoordinates;
+}
+
 Vec3Df textureMap(Vec3Df position, const int triangle)
 {
-    Vec3Df vec;
-    Triangle tri = MyMesh.triangles[triangle];
-    std::vector<Triangle> tris;
+    // position is vector of x, y, z coordinates in loacal space, located in triangle
+    // triangle is index in MyMesh.triangles[]
+    // Triangle MyMesh.triangles[triangle] is object with:
+    // vertices v[0], vp1], v[2] in local space coordinates
+    // mapped to vt[0], vt[1], vt[2] in normalized texture map coordinates
+    //
+    // find baryCoordinates of position, then calculate position in texture map and retrieve color
+    //
+    Vec3Df baryCoordinates = barycentricInterpolation(position, triangle);
 
+    // retrieve triangle from MyMesh
+    Triangle tri = MyMesh.triangles[triangle];
+
+    // retrieve texture coordinate from MyMesh
+    // textcoord is Vec3Df, but only x and y coordinates used
+    Vec3Df t0 = MyMesh.texcoords[tri.t[0]];
+    Vec3Df t1 = MyMesh.texcoords[tri.t[1]];
+    Vec3Df t2 = MyMesh.texcoords[tri.t[2]];
     
-   // Intersection intersection = tree->trace(testRayOrigin, testRayDestination - testRayOrigin, MyMesh.triangles, MyMesh.vertices);
+    Vec3Df mappedPosition = Vec3Df(0,0,0);
+    // calculate position mapped to texture coordinates
+    // x coordinate
+    mappedPosition[0] = baryCoordinates[0] * t0[0] + baryCoordinates[1] * t1[0] + baryCoordinates[2] * t2[0];
+    // y coordinate
+    mappedPosition[1] = baryCoordinates[1] * t0[1] + baryCoordinates[1] * t1[1] + baryCoordinates[2] * t2[1];
     
-   
-    Vec3Df bCoords = position;
-    Vec3Df texCoord1 = MyMesh.texcoords[0];
-    Vec3Df texCoord2 = MyMesh.texcoords[1];
-    Vec3Df texCoord3 = MyMesh.texcoords[2];
-        
-        
-    vec = texCoord1 * bCoords[0] + texCoord2 * bCoords[1] + texCoord3 * bCoords[2];
+    // mappedPosition are now 2D coordinates in normalised texture plane
+    //
+    // Retrieve material_index from mesh
+    const int material = MyMesh.triangleMaterials[triangle];
+    //
+    // retrieve texture from textureName in material
+    Texture tex = MyTextures[MyMesh.materials[material].textureName().c_str()];
     
-    return texture.color(vec[0], vec[1]) / 255.f;
-    /*
-    int q = triangle;
-    int g = intersection.triangle;
-    
-    Vec3Df location = intersection.position;
-    float dis = intersection.distance;
-    
-    
-    if (location == position) {
-        Vec3Df edge0 = tri.e0;
-        Vec3Df edge1 = tri.e1;
-    }
-    
-    Vec3Df edge0 = tri.e0;
-    Vec3Df edge1 = tri.e1;
-    Vec3Df edge2 = tri.e2;
-    
-    // barycentric coordinates
-    float a = Vec3Df::squaredDistance(edge0, edge1);
-    float b = Vec3Df::squaredDistance(edge1, edge2);
-    float c = Vec3Df::squaredDistance(edge2, edge0);
-    
-    
-    return vec;*/
+    if (DEBUG_TEXTUREMAP) printf("textureMap: mappedPosition=(%f, %f)\n",mappedPosition[0], mappedPosition[1]);
+
+    return tex.color(mappedPosition[0], mappedPosition[1]);
 }
+
 
 /**
  * Return the color of your pixel.
  */
-//return the color of your pixel.
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
 {
     Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
@@ -130,12 +166,12 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
     Vec3Df location = intersection.position;
     Vec3Df localColor = MyMesh.materials[material].Ka();
     
-    Vec3Df textureColor = Vec3Df(1,1,1);
+    Vec3Df textureColor = Vec3Df(1,1,1); // init-value
+
     if (MyMesh.materials[material].textureName().length() > 1) {
-         textureColor = textureMap(intersection.position, intersection.triangle);//(Vec3Df(0,0,0), 1); //localColoreturn textureColor; //??
+        textureColor = textureMap(intersection.position, intersection.triangle);
+        localColor = textureColor;
     }
-    localColor = localColor * textureColor; 
-   
     
     for (auto light : lights)
     {
@@ -154,14 +190,11 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
         drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
         drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
         drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
-        
-        return localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
+        return textureColor;//localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
         
         //return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
-        
-        
     }
-    return Vec3Df(0,0,0);
+    return textureColor; //Vec3Df(1,0,0);
 }
 
 

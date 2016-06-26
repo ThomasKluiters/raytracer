@@ -11,6 +11,7 @@
 extern Mesh MyMesh; //Main mesh
 extern std::vector<Vec3Df> MyLightPositions;
 extern Vec3Df MyCameraPosition; //currCamera
+extern std::map <std::string, Texture> MyTextures; // hold (textureName, Texture) pairs
 extern unsigned int WindowSize_X;//window resolution width
 extern unsigned int WindowSize_Y;//window resolution height
 extern unsigned int RayTracingResolutionX;  // largeur fenetre
@@ -39,5 +40,6 @@ void clearAllLines();
 void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
+float areaTriangle(Vec3Df A, Vec3Df B);
 
 #endif
