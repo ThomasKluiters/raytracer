@@ -20,6 +20,9 @@
 #include <iostream>
 #include <fstream>
 
+#define DEBUG_MESH     1   // 0: do not print debug info; 1: print debug info
+#define DEBUG_LOADBMP  0   // 0: do not print debug info; 1: print debug info
+
 /************************************************************
  * SKIP THIS FILE
  ************************************************************/
@@ -33,6 +36,10 @@ using namespace std;
 
 //dirty hack... do not do this at home... ;)
 const unsigned int LINE_LEN = 256;
+
+
+
+
 
 /************************************************************
  * Normal calculations
@@ -80,7 +87,7 @@ void Mesh::draw(){
     
     for (unsigned int i = 0; i < triangles.size(); ++i)
     {
-        unsigned int triMat = triangleMaterials.at(i);
+        // unsigned int triMat = triangleMaterials.at(i);
         
         Vec3Df col = Vec3Df(0.1, 0.1,  0.1);
         glColor3fv(col.pointer());
@@ -133,12 +140,12 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
             realFilename[i] = '/';
     }
     
-    std::vector<Vec3Df>     normals;
+    std::vector<Vec3Df>    normals;
     std::string            matname;
     
     std::string path_;
     std::string temp(realFilename);
-    int pos = temp.rfind("/");
+    int pos = (int) temp.rfind("/");
     
     if (pos < 0)
     {
@@ -161,13 +168,14 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
         // material file
         else if (strncmp(s, "mtllib ", 7) == 0)
         {
-            char mtlfile[128];
+            //char mtlfile[128];
             char *p0 = s + 6, *p1;
-            while (isspace(*++p0)); p1 = p0;
+            while (isspace(*++p0)) {}; p1 = p0;
             std::string t = p1;
             int i;
             for (i = 0; i < t.length(); ++i)
             {
+                // skip characters below 32
                 if (t[i] < 32 || t[i] == 255)
                 {
                     break;
@@ -178,7 +186,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
                 file = path_.append(t);
             else
                 file = path_.append(t.substr(0, i));
-            printf("Load material file %s\n", file.c_str());
+            printf("loadMesh: Load material file %s\n", file.c_str());
             loadMtl(file.c_str(), materialIndex);
         }
         
@@ -186,12 +194,12 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
         else if (strncmp(s, "usemtl ", 7) == 0)
         {
             char *p0 = s + 6, *p1;
-            while (isspace(*++p0)); p1 = p0;
+            while (isspace(*++p0)) {}; p1 = p0;
             while (!isspace(*p1)) ++p1; *p1 = '\0';
             matname = p0;
             if (materialIndex.find(matname) == materialIndex.end())
             {
-                printf("Warning! Material '%s' not defined in material file. Taking default!\n", matname.c_str());
+                printf("loadMesh: Warning! Material '%s' not defined in material file. Taking default!\n", matname.c_str());
                 matname = "";
             }
         }
@@ -305,7 +313,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
                 //model is not triangulated, so let us do this on the fly...
                 //to have a more uniform mesh, we add randomization
                 unsigned int k = (false) ? (rand() % vhandles.size()) : 0;
-                for (unsigned int i = 0; i < vhandles.size() - 2; ++i)
+                for (unsigned int i = 0; i < vhandles.size() - 2; ++i) // e.g. number of triangles for square is 2; 3 for pentagon
                 {
                     const int v0 = (k + 0) % vhandles.size();
                     const int v1 = (k + i + 1) % vhandles.size();
@@ -315,21 +323,20 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
                     const int t1 = (k + i + 1) % vhandles.size();
                     const int t2 = (k + i + 2) % vhandles.size();
                     
-                    const int m = (materialIndex.find(matname))->second;
+                    const int m = (materialIndex.find(matname))->second;         // m is index of material
                     
-                    triangles.push_back(
-                                        Triangle(vhandles[v0], texhandles[t0],
+                    triangles.push_back(Triangle(vhandles[v0], texhandles[t0],
                                                  vhandles[v1], texhandles[t1],
-                                                 vhandles[v2], texhandles[t2]));
-                    triangleMaterials.push_back(m);
+                                                 vhandles[v2], texhandles[t2])); // push triangle consisting of indices of vertices and texcoords
+                    triangleMaterials.push_back(m);                              // push material index for triangle
                 }
             }
-            else if (vhandles.size() == 3)
+            else if (vhandles.size() == 3) // already a triangle
             {
                 triangles.push_back(Triangle(vhandles[0], texhandles[0], vhandles[1], texhandles[1], vhandles[2], texhandles[2]));
                 triangleMaterials.push_back((materialIndex.find(matname))->second);
             }
-            else
+            else // face has less than 3 vertices, is not a 3D plane but line or point
             {
                 printf("TriMesh::LOAD: Unexpected number of face vertices (<3). Ignoring face");
             }
@@ -347,48 +354,52 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
     _in = fopen(filename, "r");
     if (!_in)
     {
-        printf("  Warning! Material file '%s' not found!\n", filename);
+        printf("loadMtl: Warning! Material file '%s' not found!\n", filename);
         return false;
     }
     
     char   line[LINE_LEN];
     std::string textureName;
-    
     std::string key;
     Material    mat;
     float       f1, f2, f3;
     bool        indef = false;
     
-    memset(line, 0, LINE_LEN);
+    memset(line, 0, LINE_LEN); // blank the line
     while (_in && !feof(_in))
     {
         fgets(line, LINE_LEN, _in);
         
         if (line[0] == '#') // skip comments
         {
-            memset(line, 0, LINE_LEN);
+            memset(line, 0, LINE_LEN); // blank the line and ignore/continue
             continue;
         }
         
-        else if (isspace(line[0]) || line[0] == '\0')
+        else if (isspace(line[0]) || line[0] == '\0')  // end of material or file
         {
             if (indef && !key.empty() && mat.is_valid())
             {
-                if (materialIndex.find(key) == materialIndex.end())
+                if (materialIndex.find(key) == materialIndex.end())                 // material not yet in index
                 {
-                    mat.set_name(key);
-                    materials.push_back(mat);
-                    materialIndex[key] = materials.size() - 1;
+                    mat.set_name(key);                                              // set name of material to key
+                    materials.push_back(mat);                                       // add material to materials
+                    materialIndex[key] = (unsigned int) materials.size() - 1;       // set materialIndex[key]
+
+                    if (materials[materialIndex[key]].textureName().empty())        // make sure textureName is stored properly
+                    {
+                        materials[materialIndex[key]].set_textureName(textureName);
+                    }
                 }
                 mat.cleanup();
             }
             if (line[0] == '\0')
                 break;
         }
-        else if (strncmp(line, "newmtl ", 7) == 0) // begin new material definition
+        else if (strncmp(line, "newmtl ", 7) == 0) // begin new material definition; key = material name
         {
             char *p0 = line + 6, *p1;
-            while (isspace(*++p0)); p1 = p0;
+            while (isspace(*++p0)) {}; p1 = p0;
             while (!isspace(*p1)) ++p1; *p1 = '\0';
             key = p0;
             indef = true;
@@ -426,18 +437,21 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
         }
         else if (strncmp(line, "map_Kd ", 7) == 0) // map images
         {
-            std::string t = &(line[7]);
-            if (!t.empty() && t[t.length() - 1] == '\n') {
-                t.erase(t.length() - 1);
+            textureName = &(line[7]);
+            if (!textureName.empty() && textureName[textureName.length() - 1] == '\n') {
+                textureName.erase(textureName.length() - 1); // take off remainder of textureName
             }
-            
+            printf("loadMtl: textureName=%s\n", textureName.c_str());
             // map_Kd, diffuse map
             // map_Ks, specular map
             // map_Ka, ambient map
             // map_Bump, bump map
             // map_d,  opacity map
             // just skip this
-            mat.set_textureName(t);
+            mat.set_textureName(textureName);
+            
+            // MyTextures[textureName]= Texture
+            loadBMP(mat.textureName().c_str(), MyTextures[textureName]);
         }
         else if (strncmp(line, "Tr ", 3) == 0) // transparency value
         {
@@ -452,77 +466,95 @@ bool Mesh::loadMtl(const char * filename, std::map<string, unsigned int> & mater
         
         if (feof(_in) && indef && mat.is_valid() && !key.empty())
         {
-            if (materialIndex.find(key) == materialIndex.end())
+            if (materialIndex.find(key) == materialIndex.end())                 // material not yet in materials
             {
-                mat.set_name(key);
-                materials.push_back(mat);
-                materialIndex[key] = materials.size() - 1;
+                mat.set_name(key);                                              // set name of material to key
+                materials.push_back(mat);                                       // add material to materials
+                materialIndex[key] = (unsigned int) materials.size() - 1;       // set key to last material's index
+
+                if (materials[materialIndex[key]].textureName().empty())        // make sure textureName is stored properly
+                {
+                    materials[materialIndex[key]].set_textureName(textureName);
+                }
             }
         }
-        memset(line, 0, LINE_LEN);
+        memset(line, 0, LINE_LEN); // blank the line
     }
-    unsigned int msize = materials.size();
-    printf("%u  materials loaded.\n", msize);
+    unsigned int msize = (unsigned int) materials.size();
+    printf("loadMtl: %u  materials loaded.\n", msize);
     fclose(_in);
     return true;
 }
 
-Texture Mesh::loadBMP(const char * imagepath)
+bool Mesh::loadBMP(const char * imagepath, Texture &texture)
 {
 	// Data read from the header of the BMP file
 	unsigned char header[54]; // Each BMP file begins by a 54-bytes header
-	unsigned int dataPos;     // Position in the file where the actual data begins
-	unsigned int imageSize;   // = width*height*3
+	unsigned int dataPos = 0;     // Position in the file where the actual data begins
+	unsigned int imageSize = 0;   // = width*height*3
 							  // Actual RGB data
 	unsigned char * data;
-
-	Texture texture;
-
+    
 	// Open the file
-	FILE * file = fopen("nocompress.bmp", "r");
-	if (!file) { printf("Image could not be opened\n"); return texture; }
+    FILE * file = fopen(imagepath, "r");
+	if (!file) { printf("loadBMP: Image could not be opened\n"); return false; }
 
-	if (fread(header, 1, 54, file) != 54) { // If not 54 bytes read : problem
-		printf("Not a correct BMP file\n");
-		return texture;
+	if (fread(header, 1, 54, file) != 54) { // Read 54 bytes from the header (14) and dibHeader (40)
+		printf("loadBMP: Not a correct BMP file\n");
+		return false;
 	}
 
 	if (header[0] != 'B' || header[1] != 'M') {
-		printf("Not a correct BMP file\n");
-		return texture;
+		printf("loadBMP: Not a correct BMP file\n");
+		return false;
 	}
 
-	// Read ints from the byte array
+	// Read ints from the header byte array
 	dataPos = *(int*)&(header[0x0A]);
 	imageSize = *(int*)&(header[0x22]);
-	texture.width = *(int*)&(header[0x12]);
-	texture.height = *(int*)&(header[0x16]);
+	texture.width = abs(*(int*)&((header[0x12])));
+	texture.height = abs(*(int*)&(header[0x16]));
+    
+    if (DEBUG_LOADBMP) cout << "data: " << dataPos << "\nimageSize: " << imageSize << "\nwidth: " << texture.width <<"\nheigth: " << texture.height;
 
 	int dibHeaderSize = *(int*)&(header[0x0E]);
-	int bitsPerPixel = *(int*)&(header[0x1E]);
-
+	int bitsPerPixel  = *(int*)&(header[0x1C]);
+    int bytesPerPixel = bitsPerPixel / 8;
+    
+    if (DEBUG_LOADBMP) cout << "headersize: " << dibHeaderSize << "\nbits: " << bitsPerPixel << "\n";
+    
 	// Some BMP files are misformatted, guess missing information
-	if (imageSize == 0)    imageSize = texture.width*texture.height * 3; // 3 : one byte for each Red, Green and Blue component
-	if (dataPos == 0)      dataPos = 54; // The BMP header is done that way
-											 // Create a buffer
-	data = new unsigned char[imageSize];
+    // bytesPerPixel: 3 : one byte for each Red, Green and Blue component (reversed); 4 is BGRA
+    if (imageSize == 0)    imageSize = texture.width*texture.height * bytesPerPixel;
+    
+    if (dataPos == 0)      dataPos = 54; // The BMP header is done that way
+
+    // Create a buffer to hold image data
+    data = new unsigned char[imageSize];
 
 	fread(data, 1, imageSize, file);
 
+    // allocate data in texture to hold the color data
 	texture.colors = new Vec3Df[texture.width * texture.height];
-
-	for (int i = 0; i < imageSize; i += 3)
-	{
-		texture.colors[i / 3] = Vec3Df(
-			data[i] / 255.f,
-			data[i + 1] / 255.f,
-			data[i + 2] / 255.f
-		);
-	}
+    
+    // parse image data in steps of bytesPerPixel and store as normalized color data in texture
+    for (int i = 0; i < imageSize; i += bytesPerPixel) // 3 or 4 bytes per pixel; BGR or BGRA
+    {
+        // in case of 4 bytesPerPixel; ignore first A value
+        // assign to RGB pixel in texture
+        // bytesPerPixel == 3 (format = BGR)
+        // bytesPerPixel == 4 (format = BGRA, ignore A)
+        texture.colors[i / bytesPerPixel] = Vec3Df(
+                                            data[i + 2] / 255.f,
+                                            data[i + 1] / 255.f,
+                                            data[i + 0] / 255.f
+                                           ); //ignore data i+3, BGRA format
+    }
 		
 	//Everything is in memory now, the file can be closed
 	fclose(file);
 	free(data);
+    if (DEBUG_LOADBMP) printf("%u bytes read from bmp %s.\n", imageSize, imagepath);
     
-	return texture;
+	return true;
 }

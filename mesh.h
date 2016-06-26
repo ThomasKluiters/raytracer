@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 
+
 class Texture {
     
 public:
@@ -24,6 +25,8 @@ public:
     }
     
 };
+
+extern std::map <std::string, Texture> MyTextures; // hold (textureName, Texture) pairs
 
 class Light
 {
@@ -193,7 +196,7 @@ private:
     float Ns_;                     bool Ns_is_set_;
     float Ni_;                     bool Ni_is_set_;
     int illum_;                     bool illum_is_set_;//illumination model
-    float Tr_;         bool Tr_is_set_; // transperency
+    float Tr_;         bool Tr_is_set_; // transparency
     std::string        name_;
     std::string        textureName_;
 };
@@ -229,13 +232,14 @@ public:
         t[2] = t2;
     }
     inline virtual ~Triangle () {}
+
     inline Triangle & operator= (const Triangle & t2) {
         v[0] = t2.v[0];
         v[1] = t2.v[1];
         v[2] = t2.v[2];
-        t[0] = t2.v[0];
-        t[1] = t2.v[1];
-        t[2] = t2.v[2];
+        t[0] = t2.t[0];
+        t[1] = t2.t[1];
+        t[2] = t2.t[2];
         return (*this);
     }
     
@@ -248,7 +252,6 @@ public:
         // Compute edges
         e0 = vertices[v[1]].p - vertices[v[0]].p;
         e1 = vertices[v[2]].p - vertices[v[0]].p;
-        e2 = vertices[v[2]].p - vertices[v[1]].p;
         
         // Compute the normal
         n = Vec3Df::crossProduct(e0, e1);
@@ -332,6 +335,10 @@ public:
     Vec3Df e0;
     Vec3Df e1;
     Vec3Df e2;
+    // Nodes
+    Vec3Df h0;
+    Vec3Df h1;
+    Vec3Df h2;
     
     // Pre-computed values for SIMD acceleration
     // Normal data
@@ -361,7 +368,7 @@ public:
     inline Mesh (const std::vector<Vertex> & v, const std::vector<Triangle> & t) : vertices (v), triangles (t)  {}
     bool loadMesh(const char * filename, bool randomizeTriangulation);
     bool loadMtl(const char * filename, std::map<std::string, unsigned int> & materialIndex);
-    Texture loadBMP(const char * imagepath);
+    bool loadBMP(const char * imagepath, Texture &texture);
     void computeVertexNormals ();
     void draw();
     void drawSmooth();
