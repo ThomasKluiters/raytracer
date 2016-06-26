@@ -11,7 +11,7 @@ using namespace std;
 
 
 
-TCPSocket connection("127.0.0.1", 2002);
+TCPSocket connection("127.0.0.1", 2003);
 
 const int RCVBUFSIZE = 30;    // Size of receive buffer
 
@@ -60,9 +60,14 @@ public:
             
             rgbValue =  (image._image[i] * 255.0f);
             
-            sprintf(message, "%d_%f", i, rgbValue);
-             
-            connection.send(message, 20);
+            // Only send value when necessary
+            if (rgbValue > 0.0f) {
+            
+                sprintf(message, "%d_%f", i, rgbValue);
+                 
+                connection.send(message, 20);
+                
+            }
             
             cout << i/(float)image._image.size() << endl;
             

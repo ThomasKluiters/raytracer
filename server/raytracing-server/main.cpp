@@ -25,8 +25,8 @@
 
 
 #define NUM_CLIENTS 2
-#define NUM_BLOCKS_X 2
-#define NUM_BLOCKS_Y 1
+#define NUM_BLOCKS_X 1
+#define NUM_BLOCKS_Y 2
 #define WIDTH 200
 #define HEIGHT 200
 
@@ -93,20 +93,23 @@ void HandleTCPClient(TCPSocket *sock) {
     
     currentClients++;
     
+    if(currentClients > NUM_CLIENTS) {
+        cout << "Max clients reached" << endl;
+        return;
+    }
+    
     // Block size
     unsigned int numberOfXPixelsInBlock = ceil(WIDTH / NUM_BLOCKS_X);
     unsigned int numberOfYPixelsInBlock = ceil(HEIGHT / NUM_BLOCKS_Y);
     
     
-    int currentXBlock = (currentClients-1)/NUM_BLOCKS_X;
-    int currentYBlock = (currentClients-1) % NUM_BLOCKS_X;
+    int currentXBlock = (currentClients-1) % NUM_BLOCKS_X;
+    int currentYBlock = (currentClients-1) / NUM_BLOCKS_X;
     
     int startX = currentXBlock * numberOfXPixelsInBlock; // start x
     int endX = (currentXBlock+1) * numberOfXPixelsInBlock; // end x
     int startY = currentYBlock * numberOfYPixelsInBlock; // start y
     int endY = (currentYBlock+1) * numberOfYPixelsInBlock; // end y
-    
-    // START Y INCORRECT
     
     cout << "Client number: " << currentClients << " << start x: " << startX << " start y: " << startY << endl;
     
@@ -135,9 +138,6 @@ void HandleTCPClient(TCPSocket *sock) {
             cout << "Received message: " << i << "RGB " << rgbValue << endl;
         
         result.setValue(i, rgbValue);
-        
-        
-       // sock->send(echoBuffer, recvMsgSize);
     }
     
     result.writeImage("result.ppm");

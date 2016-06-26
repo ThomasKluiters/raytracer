@@ -33,6 +33,11 @@ public:
     , _height(height)
     {
         _image.resize(3 * _width*_height);
+        
+        for (int i = 0; i < _image.size(); i++) {
+            _image[i] = 0.0f;
+        }
+        
     }
     
     void setValue(int i, float rgbValue) {

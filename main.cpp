@@ -45,8 +45,8 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 500;	// X-resolution
-unsigned int WindowSize_Y = 500;	// Y-resolution
+unsigned int WindowSize_X = 200;	// X-resolution
+unsigned int WindowSize_Y = 200;	// Y-resolution
 
 unsigned int startX = 0;
 unsigned int endX = 0;
@@ -55,9 +55,9 @@ unsigned int endY = 0;
 
 #define ANTIALIASING false
 
-#define NUM_THREADS 18              // Max number of threads
-#define NUM_BLOCKS_X 6              // Number of blocks in x direction
-#define NUM_BLOCKS_Y 3              // Number of blocks in y direction
+#define NUM_THREADS 1              // Max number of threads
+#define NUM_BLOCKS_X 1              // Number of blocks in x direction
+#define NUM_BLOCKS_Y 1              // Number of blocks in y direction
 
 
 /**
@@ -253,6 +253,8 @@ void performRaytracingBlock( unsigned int xStart,
     Vec3Df origin, dest;
     float localProgress;
     
+    cout << " ystart " << yStart << " yend " << yEnd << " xstart " << xStart << " xend " << xEnd << endl;
+    
     for (unsigned int y = yStart; y < yEnd && y < WindowSize_Y; ++y) {
         
         for (unsigned int x = xStart; x < xEnd && x < WindowSize_X; ++x)
@@ -417,8 +419,8 @@ void keyboard(unsigned char key, int x, int y)
             std::time_t startTime = std::time(nullptr);
             
             // Block size
-            unsigned int numberOfXPixelsInBlock = ceil(WindowSize_X / NUM_BLOCKS_X);
-            unsigned int numberOfYPixelsInBlock = ceil(WindowSize_Y / NUM_BLOCKS_Y);
+            unsigned int numberOfXPixelsInBlock = ceil( (endX - startX) / NUM_BLOCKS_X);
+            unsigned int numberOfYPixelsInBlock = ceil( (endY - startY) / NUM_BLOCKS_Y);
             
             // Vector to store threads
             std::vector<std::thread> threads;
@@ -439,10 +441,10 @@ void keyboard(unsigned char key, int x, int y)
                 
                     threads.push_back(std::thread(
                                      performRaytracingBlock,
-                                     xBlock * numberOfXPixelsInBlock, // start x
-                                     (xBlock+1) * numberOfXPixelsInBlock, // end x
-                                     yBlock * numberOfYPixelsInBlock, // start y
-                                     (yBlock+1) * numberOfYPixelsInBlock, // end y
+                                     startX + xBlock * numberOfXPixelsInBlock, // start x
+                                     startX + (xBlock+1) * numberOfXPixelsInBlock, // end x
+                                     startY + yBlock * numberOfYPixelsInBlock, // start y
+                                     startY + (yBlock+1) * numberOfYPixelsInBlock, // end y
                                      origin00,
                                      origin01,
                                      origin10,
