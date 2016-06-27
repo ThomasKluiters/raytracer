@@ -39,6 +39,9 @@
     <ClInclude Include="KDTree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PhotonMapping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

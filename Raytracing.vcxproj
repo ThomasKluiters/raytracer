@@ -23,6 +23,7 @@
     <ClInclude Include="KDTree.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="PhotonMapping.h" />
     <ClInclude Include="raytracing.h" />
     <ClInclude Include="traqueboule.h" />
     <ClInclude Include="Vec3D.h" />
