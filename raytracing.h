@@ -41,5 +41,6 @@ void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
 float areaTriangle(Vec3Df A, Vec3Df B);
+Vec3Df textureMap(Vec3Df position, const int triangle);
 
 #endif

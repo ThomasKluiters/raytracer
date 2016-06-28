@@ -72,6 +72,57 @@ float areaTriangle(Vec3Df A, Vec3Df B) {
     return c;
 }
 
+/**
+* Return the color of your pixel.
+*/
+//return the color of your pixel.
+Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
+{
+	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
+
+	if (!intersection.hit())
+	{
+		drawLine(origin, origin , Vec3Df(1, 0, 0));
+		return Vec3Df(0, 0, 0);
+	}
+
+	const int triangle = intersection.triangle;
+
+	const int material = MyMesh.triangleMaterials[triangle];
+
+	Vec3Df normal = intersection.normal;
+	Vec3Df location = intersection.position;
+	Vec3Df localColor = MyMesh.materials[material].Ka();
+    Vec3Df textureColor = Vec3Df(1,1,1); // init-value
+    
+    if (MyMesh.materials[material].textureName().length() > 1) {
+        textureColor = textureMap(intersection.position, intersection.triangle);
+        localColor = textureColor;
+    }
+
+	for (auto light : lights)
+	{
+		localColor = localColor + softshading(location, normal, origin, light, material);
+	}
+
+	if (depth < 6) {
+		Vec3Df N = intersection.normal;
+		N.normalize();
+
+		Vec3Df R = -1.0f * direction;
+		R.normalize();
+
+		Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+
+		drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
+		drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
+		drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
+
+		return localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
+    }
+    return Vec3Df(0,0,0);
+}
+
 Vec3Df barycentricInterpolation(Vec3Df position, const int triangle)
 {
     Vec3Df baryCoordinates = Vec3Df(0,0,0); // initialize baryCoordinates at Origin
@@ -143,59 +194,6 @@ Vec3Df textureMap(Vec3Df position, const int triangle)
     return tex.color(mappedPosition[0], mappedPosition[1]);
 }
 
-
-/**
- * Return the color of your pixel.
- */
-Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
-{
-    Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
-    
-    if (!intersection.hit())
-    {
-        drawLine(origin, origin , Vec3Df(1, 0, 0));
-        return Vec3Df(0, 0, 0);
-    }
-    
-    const int triangle = intersection.triangle;
-    
-    const int material = MyMesh.triangleMaterials[triangle];
-    
-    Vec3Df normal = intersection.normal;
-    Vec3Df inv_normal = -1.0f * normal;
-    Vec3Df location = intersection.position;
-    Vec3Df localColor = MyMesh.materials[material].Ka();
-    
-    Vec3Df textureColor = Vec3Df(1,1,1); // init-value
-
-    if (MyMesh.materials[material].textureName().length() > 1) {
-        textureColor = textureMap(intersection.position, intersection.triangle);
-        localColor = textureColor;
-    }
-    
-    for (auto light : lights)
-    {
-        localColor = localColor + softshading(location, normal, origin, light, material);
-    }
-    
-    if (depth < 6) {
-        Vec3Df N = intersection.normal;
-        N.normalize();
-        
-        Vec3Df R = -1.0f * direction;
-        R.normalize();
-        
-        Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
-        
-        drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
-        drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
-        drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
-        return textureColor;//localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
-        
-        //return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
-    }
-    return textureColor; //Vec3Df(1,0,0);
-}
 
 
 Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material) {
