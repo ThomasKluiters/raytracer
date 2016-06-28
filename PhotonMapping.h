@@ -6,7 +6,7 @@
 #include <queue>
 #include <functional>
 
-const int N = 20;
+const int N = 50;
 
 #define SHADOW 0
 #define DIFFUSE 1
@@ -89,47 +89,13 @@ public:
 
 	void locatePhotons(Vec3Df position, vector<Radiance> & heap)
 	{
-
-		if (left && left->box.contains(position))
-		{
-			left->locatePhotons(position, heap);
-
-			float distance = right->box.distance(position);
-			Radiance radiance = heap.front();
-
-			if (heap.size() == N && radiance.distance < distance)
-			{
-				return;
-			}
-
-			if (right && heap.size() < N)
-			{
-				right->locatePhotons(position, heap);
-			}
-		}
-		else if (right && right->box.contains(position))
-		{
-			right->locatePhotons(position, heap);
-
-			float distance = left->box.distance(position);
-			Radiance radiance = heap.front();
-
-			if (heap.size() == N && radiance.distance < distance)
-			{
-				return;
-			}
-
-			if (left && heap.size() < N)
-			{
-				left->locatePhotons(position, heap);
-			}
-		}
-
 		if (leaf())
 		{
 			for (auto photon : photons)
 			{
-				float radius = Vec3Df::distance(photon.position, position);
+				float distance = Vec3Df::distance(photon.position, position);
+				float radius = distance * distance;
+
 				if (heap.size() < N)
 				{
 					heap.push_back({
@@ -155,6 +121,47 @@ public:
 					}
 				}
 			}
+		}
+		else
+		{
+
+			float leftDistance = left->box.distance(position);
+			float rightDistance = right->box.distance(position);
+
+			if (rightDistance > leftDistance)
+			{
+				left->locatePhotons(position, heap);
+
+				if (heap.size() > 0)
+				{
+					float max = heap.front().distance;
+
+					if (rightDistance > max)
+					{
+						return;
+					}
+				}
+
+				right->locatePhotons(position, heap);
+
+			}
+			else
+			{
+				right->locatePhotons(position, heap);
+
+				if (heap.size() > 0)
+				{
+					float max = heap.front().distance;
+
+					if (leftDistance > max)
+					{
+						return;
+					}
+				}
+
+				left->locatePhotons(position, heap);
+			}
+
 		}
 	}
 
@@ -184,6 +191,10 @@ public:
 		int left;
 
 		int right;
+
+		int side;
+
+		int photon;
 	};
 
 	struct Event
@@ -243,7 +254,7 @@ public:
 		return 2 * (lengths[0] * lengths[1] + lengths[1] * lengths[2] + lengths[2] * lengths[0]);
 	}
 
-	float SAH(Box box, float position, int dimension, int N_l, int N_r)
+	pair<float, int> SAH(Box box, float position, int dimension, int N_l, int N_r)
 	{
 		pair<Box, Box> split = splitBox(box, position, dimension);
 		Box V_l = split.first;
@@ -255,7 +266,9 @@ public:
 		float C_l = C(P_l, P_r, N_l + 1, N_r);
 		float C_r = C(P_l, P_r, N_l, N_r + 1);
 
-		return fminf(C_l, C_r);
+		if (C_l < C_r)
+			return make_pair(C_l, LEFT);
+		return make_pair(C_r, RIGHT);
 	}
 
 
@@ -266,7 +279,7 @@ public:
 
 		int left[3] = { 0, 0, 0 };
 		
-		int right[3] = { size, size, size };
+		int right[3] = { size / 3, size / 3, size / 3};
 
 		float best = FLT_MAX;
 
@@ -278,29 +291,35 @@ public:
 
 			const float position = event.position;
 			const int dimension = event.dimension;
+			const int photon = event.photon;
 
-			float cost = SAH(box, position, dimension, left[dimension], right[dimension]);
+			pair<float, int> sah = SAH(box, position, dimension, left[dimension], right[dimension]);
+			float cost = sah.first;
+			int side = sah.second;
 
-			if (cost < best)
+			if (cost <= best)
 			{
-				cost = best;
+				best = cost;
 
 				split = {
 					position,
 					dimension,
 					cost,
 					left[dimension],
-					right[dimension]
+					right[dimension],
+					side,
+					photon
 				};
 			}
 
-			left[dimension]--;
+			left[dimension]++;
+			right[dimension]--;
 		}
 
 		return split;
 	}
 	
-	PhotonMap * construct(vector<Event> & events, Box box)
+	PhotonMap * construct(vector<Event> events, Box box)
 	{
 		Split split = findPlane(events, box);
 
@@ -334,13 +353,17 @@ public:
 			{
 				const float eventPosition = events[eventIndex].position;
 
-				if (eventPosition < position)
+				if (events[eventIndex].photon == split.photon)
 				{
-					classifications[events[eventIndex].photon] = 0;
+					classifications[split.photon] = split.side;
+				} 
+				else if (eventPosition < position)
+				{
+					classifications[events[eventIndex].photon] = LEFT;
 				}
 				else
 				{
-					classifications[events[eventIndex].photon] = 1;
+					classifications[events[eventIndex].photon] = RIGHT;
 				}
 			}
 		}
@@ -353,11 +376,11 @@ public:
 			const int photon = events[eventIndex].photon;
 			const int side = classifications[photon];
 
-			if (side == 0)
+			if (side == LEFT)
 			{
 				left.push_back(events[eventIndex]);
 			}
-			else if (side == 1)
+			else if (side == RIGHT)
 			{
 				right.push_back(events[eventIndex]);
 			}

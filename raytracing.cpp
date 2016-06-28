@@ -29,7 +29,7 @@ std::vector<Vec3Df> testDots;
 std::vector<Vec3Df> testColors;
 
 int maxDepth;
-int photons = 10000;
+int photons = 20000;
 bool draw;
 
 std::vector<Light*> lights;
@@ -107,7 +107,7 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic, bool so
 		{
 			do {
 
-				Vec3Df power(0, 0, 0);
+				Vec3Df power(0, 1, 0);
 
 				shadow = tree->trace(shadow.position, ray.direction, MyMesh.triangles, MyMesh.vertices, intersection.triangle);
 				if (shadow.hit())
@@ -154,16 +154,6 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic, bool so
 
 	Vec3Df & position = intersection.position;
 
-	tracePhoton(
-	{
-		position,
-		reflection,
-		power
-	},
-		builder,
-		caustic,
-		false
-		);
 }
 
 void emitPhotons()
@@ -260,20 +250,31 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		Vec3Df irridance = Vec3Df(0, 0, 0);
 
 		Vec3Df diffuse = MyMesh.materials[material].Kd();
+		
+		int diffuseCount = 0;
+		int shadowCount = 0;
 
 		for (auto & rad : radiance)
 		{
 			float angle = Vec3Df::dotProduct(rad.photon.incident, normal);
 			if (angle > 0.0f)
 			{
-				cout << rad.photon.power << endl;
-				irridance = irridance + diffuse * angle * rad.photon.power;
+				switch (rad.photon.type)
+				{
+				case DIFFUSE:
+					irridance = irridance + rad.photon.power * angle;
+					diffuseCount++;
+					break;
+				case SHADOW:
+					shadowCount++;
+					break;
+				}
 			}
 		}
 
-		irridance = (irridance * inv) / N;
+		irridance = irridance / N;
 
-		return irridance;
+		return irridance * diffuse;
 	}
 
 	return localColor;
