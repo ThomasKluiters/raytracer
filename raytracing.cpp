@@ -45,8 +45,9 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("/Development/TU/cg/raytracer/cube.obj", true);
+	MyMesh.loadMesh("cube.obj", true);
 	MyMesh.computeVertexNormals();
+	cout << "Loaded Mesh successfully" << endl;
 
 	//one first move: initialize the first light source
 	//at least ONE light source has to be in the scene!!!

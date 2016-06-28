@@ -102,11 +102,13 @@ public:
                 
             }
             
-            cout << i/(float)image._image.size() << endl;
+//            cout << i/(float)image._image.size() << endl;
             
         }
         
         connection->send((const char*) &"/", 1);
+		
+		cout << "Image sent 'successfully' (yeah right, we'll see about that later)." << endl;
         
     }
 
