@@ -21,7 +21,7 @@
 #include <iostream>           // For cerr and cout
 #include <cstdlib>            // For atoi()
 #include "ImageWriter.h"
-#ifdef __WIN32
+#ifdef _WIN32
 #include "pthread.h"
 #else
 #include <pthread.h>

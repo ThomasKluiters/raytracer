@@ -55,7 +55,7 @@ unsigned int endY = 200;
 
 boolean headlessMode;
 
-#define ANTIALIASING false
+#define ANTIALIASING true
 
 #define NUM_THREADS 16              // Max number of threads
 #define NUM_BLOCKS_X 4              // Number of blocks in x direction
