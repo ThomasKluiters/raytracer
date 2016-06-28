@@ -53,7 +53,7 @@ unsigned int endX = 800;
 unsigned int startY = 0;
 unsigned int endY = 800;
 
-boolean headlessMode;
+bool headlessMode;
 
 #define ANTIALIASING true
 
