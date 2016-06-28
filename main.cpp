@@ -142,6 +142,8 @@ int main(int argc, char** argv)
     
     const string serverIP = argv[1];
     const unsigned short serverPort = atoi(argv[2]);
+	cout << serverIP << endl;
+	cout << serverPort << endl;
     
     connection = new TCPSocket(serverIP, serverPort);
     

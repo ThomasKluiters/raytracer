@@ -84,7 +84,7 @@ public:
     
     static void sendImage(Image image) {
         
-        int messageLength = 20;
+        const int messageLength = 20;
         
         float rgbValue;
         char message [messageLength];

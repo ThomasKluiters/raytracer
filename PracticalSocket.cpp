@@ -19,7 +19,7 @@
 
 #include "PracticalSocket.h"
 
-#ifdef WIN32
+#ifdef _WIN32
   #include <winsock.h>         // For socket(), connect(), send(), and recv()
   typedef int socklen_t;
   typedef char raw_type;       // Type used for raw data on this platform
@@ -37,7 +37,7 @@
 
 using namespace std;
 
-#ifdef WIN32
+#ifdef _WIN32
 static bool initialized = false;
 #endif
 
@@ -46,8 +46,8 @@ static bool initialized = false;
 SocketException::SocketException(const string &message, bool inclSysMsg)
   throw() : userMessage(message) {
   if (inclSysMsg) {
-    userMessage.append(": ");
-    userMessage.append(strerror(errno));
+    userMessage.append(", sorry, something went wrong. Fix it.");
+//    userMessage.append(strerror(errno));
   }
 }
 
@@ -78,7 +78,7 @@ static void fillAddr(const string &address, unsigned short port,
 // Socket Code
 
 Socket::Socket(int type, int protocol) throw(SocketException) {
-  #ifdef WIN32
+  #ifdef _WIN32
     if (!initialized) {
       WORD wVersionRequested;
       WSADATA wsaData;
@@ -102,7 +102,7 @@ Socket::Socket(int sockDesc) {
 }
 
 Socket::~Socket() {
-  #ifdef WIN32
+  #ifdef _WIN32
     ::closesocket(sockDesc);
   #else
     ::close(sockDesc);
@@ -155,7 +155,7 @@ void Socket::setLocalAddressAndPort(const string &localAddress,
 }
 
 void Socket::cleanUp() throw(SocketException) {
-  #ifdef WIN32
+  #ifdef _WIN32
     if (WSACleanup() != 0) {
       throw SocketException("WSACleanup() failed");
     }
@@ -310,7 +310,7 @@ void UDPSocket::disconnect() throw(SocketException) {
 
   // Try to disconnect
   if (::connect(sockDesc, (sockaddr *) &nullAddr, sizeof(nullAddr)) < 0) {
-   #ifdef WIN32
+   #ifdef _WIN32
     if (errno != WSAEAFNOSUPPORT) {
    #else
     if (errno != EAFNOSUPPORT) {
