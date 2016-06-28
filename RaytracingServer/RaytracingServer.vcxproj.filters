@@ -15,34 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="raytracing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="traqueboule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Vec3D.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Vertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="imageWriter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="matrix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="KDTree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Communication.h">
+    <ClInclude Include="ImageWriter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PracticalSocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sched.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,17 +32,11 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="raytracing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Communication.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PracticalSocket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="pthreadVC1.lib" />
   </ItemGroup>
 </Project>
