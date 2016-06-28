@@ -25,11 +25,11 @@
 #include <vector>
 
 
-#define NUM_CLIENTS 2
-#define NUM_BLOCKS_X 1
-#define NUM_BLOCKS_Y 2
-#define WIDTH 200
-#define HEIGHT 200
+unsigned int NUM_CLIENTS;
+unsigned int NUM_BLOCKS_X;
+unsigned int NUM_BLOCKS_Y;
+unsigned int WIDTH;
+unsigned int HEIGHT;
 
 
 std::vector<float> origin00(3);
@@ -46,7 +46,7 @@ std::vector<float> dest11(3);
 
 int currentClients = 0;
 
-Image result = Image(WIDTH, HEIGHT);
+Image *result;
 
 const int RCVBUFSIZE = 20;
 
@@ -83,12 +83,19 @@ int main(int argc, char *argv[]) {
     dest11[2] = -6.00001;
     
     
-    if (argc != 2) {                 // Test for correct number of arguments
-        cerr << "Usage: " << argv[0] << " <Server Port> " << endl;
+    if (argc != 7) {                 // Test for correct number of arguments
+        cerr << "Usage: " << argv[0] << " <Server Port> <Number of Clients> <Number of block in X direction> <Number of blocks in Y direction> <Width> <Height>" << endl;
         exit(1);
     }
     
-    unsigned short echoServPort = atoi(argv[1]);    // First arg:  local port
+    unsigned short echoServPort = atoi(argv[1]);    // First arg:   local port
+    NUM_CLIENTS = atoi(argv[2]);                    // Second arg:  total number of clients
+    NUM_BLOCKS_X = atoi(argv[3]);                   // Third arg:   blocks in x direction
+    NUM_BLOCKS_Y = atoi(argv[4]);                   // Fourth arg:  blocks in y direction
+    WIDTH = atoi(argv[5]);                          // Fifth arg:   width of image
+    HEIGHT = atoi(argv[6]);                         // Sixth arg:   height of image
+    
+    result = new Image(WIDTH, HEIGHT);
     
     try {
         TCPServerSocket servSock(echoServPort);   // Socket descriptor for server
@@ -204,10 +211,10 @@ void HandleTCPClient(TCPSocket *sock) {
         if (rgbValue > 0 )
             cout << "Received message: " << i << "RGB " << rgbValue << endl;
         
-        result.setValue(i, rgbValue);
+        result->setValue(i, rgbValue);
     }
     
-    result.writeImage("result.ppm");
+    result->writeImage("result.ppm");
     
     // Destructor closes socket
 }
