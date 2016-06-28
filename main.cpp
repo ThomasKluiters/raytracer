@@ -55,9 +55,9 @@ unsigned int endY = 0;
 
 #define ANTIALIASING false
 
-#define NUM_THREADS 1              // Max number of threads
-#define NUM_BLOCKS_X 1              // Number of blocks in x direction
-#define NUM_BLOCKS_Y 1              // Number of blocks in y direction
+#define NUM_THREADS 16              // Max number of threads
+#define NUM_BLOCKS_X 4              // Number of blocks in x direction
+#define NUM_BLOCKS_Y 4              // Number of blocks in y direction
 
 
 
