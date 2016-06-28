@@ -45,6 +45,7 @@ std::vector<float> dest11(3);
 
 
 int currentClients = 0;
+int doneClients = 0;
 
 Image *result;
 
@@ -95,6 +96,8 @@ int main(int argc, char *argv[]) {
     WIDTH = atoi(argv[5]);                          // Fifth arg:   width of image
     HEIGHT = atoi(argv[6]);                         // Sixth arg:   height of image
     
+    cout << "Started server on port " << echoServPort << ", good luck!" << endl;
+    
     result = new Image(WIDTH, HEIGHT);
     
     try {
@@ -143,11 +146,12 @@ void HandleTCPClient(TCPSocket *sock) {
     
     currentClients++;
     
+    unsigned int currentClient = currentClients;
+    
     if(currentClients > NUM_CLIENTS) {
         cout << "Max clients reached" << endl;
         return;
     }
-    
     
     int messageLength = 40;
     char message [messageLength];
@@ -179,15 +183,15 @@ void HandleTCPClient(TCPSocket *sock) {
     unsigned int numberOfYPixelsInBlock = ceil(HEIGHT / NUM_BLOCKS_Y);
     
     
-    int currentXBlock = (currentClients-1) % NUM_BLOCKS_X;
-    int currentYBlock = (currentClients-1) / NUM_BLOCKS_X;
+    int currentXBlock = (currentClient-1) % NUM_BLOCKS_X;
+    int currentYBlock = (currentClient-1) / NUM_BLOCKS_X;
     
     int startX = currentXBlock * numberOfXPixelsInBlock; // start x
     int endX = (currentXBlock+1) * numberOfXPixelsInBlock; // end x
     int startY = currentYBlock * numberOfYPixelsInBlock; // start y
     int endY = (currentYBlock+1) * numberOfYPixelsInBlock; // end y
     
-    cout << "Client number: " << currentClients << " << start x: " << startX << " start y: " << startY << endl;
+    cout << "Client number: " << currentClient << " << start x: " << startX << " start y: " << startY << endl;
     
     // Send block and image size
     sprintf(message, "%i_%i_%i_%i_%i_%i", WIDTH, HEIGHT, startX, startY, endX, endY);
@@ -213,6 +217,10 @@ void HandleTCPClient(TCPSocket *sock) {
         
         result->setValue(i, rgbValue);
     }
+    
+    doneClients++;
+    
+    cout << "Client " << currentClient << " has sent his data, there are " << currentClients - doneClients << " clients left." << endl;
     
     result->writeImage("result.ppm");
     
