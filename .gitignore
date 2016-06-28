@@ -50,6 +50,7 @@ artifacts/
 *.ilk
 *.meta
 *.obj
+*.mtl
 *.pch
 *.pdb
 *.pgc
@@ -258,6 +259,8 @@ paket-files/
 ## Build generated
 build/
 DerivedData/
+
+*.xcodeproj
 
 ## Various settings
 *.pbxuser

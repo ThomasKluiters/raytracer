@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		20B882521D19BC190021A4C7 /* Communication.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20B882501D19BC190021A4C7 /* Communication.cpp */; };
+		20B882551D19BF060021A4C7 /* PracticalSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20B882531D19BF060021A4C7 /* PracticalSocket.cpp */; };
 		4D199E991D0948D1008F8B97 /* raytracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D199E931D0948D1008F8B97 /* raytracing.cpp */; };
 		4D199E9A1D0948D1008F8B97 /* mesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D199E951D0948D1008F8B97 /* mesh.cpp */; };
 		4D199E9B1D0948D1008F8B97 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D199E971D0948D1008F8B97 /* main.cpp */; };
@@ -35,6 +37,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		20B882501D19BC190021A4C7 /* Communication.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Communication.cpp; sourceTree = "<group>"; };
+		20B882511D19BC190021A4C7 /* Communication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Communication.h; sourceTree = "<group>"; };
+		20B882531D19BF060021A4C7 /* PracticalSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PracticalSocket.cpp; sourceTree = "<group>"; };
+		20B882541D19BF060021A4C7 /* PracticalSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PracticalSocket.h; sourceTree = "<group>"; };
+		20F4DC0F1D17C1710037BFB1 /* KDTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KDTree.h; sourceTree = "<group>"; };
 		4D199E8F1D0948D1008F8B97 /* Vertex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vertex.h; sourceTree = "<group>"; };
 		4D199E901D0948D1008F8B97 /* Vec3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vec3D.h; sourceTree = "<group>"; };
 		4D199E911D0948D1008F8B97 /* traqueboule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = traqueboule.h; sourceTree = "<group>"; };
@@ -79,13 +86,18 @@
 				4D199E8F1D0948D1008F8B97 /* Vertex.h */,
 				4D199E901D0948D1008F8B97 /* Vec3D.h */,
 				4D199E911D0948D1008F8B97 /* traqueboule.h */,
+				20F4DC0F1D17C1710037BFB1 /* KDTree.h */,
 				4D199E921D0948D1008F8B97 /* raytracing.h */,
 				4D199E931D0948D1008F8B97 /* raytracing.cpp */,
 				4D199E941D0948D1008F8B97 /* mesh.h */,
 				4D199E951D0948D1008F8B97 /* mesh.cpp */,
 				4D199E961D0948D1008F8B97 /* matrix.h */,
+				20B882501D19BC190021A4C7 /* Communication.cpp */,
+				20B882511D19BC190021A4C7 /* Communication.h */,
 				4D199E971D0948D1008F8B97 /* main.cpp */,
 				4D199E981D0948D1008F8B97 /* imageWriter.h */,
+				20B882531D19BF060021A4C7 /* PracticalSocket.cpp */,
+				20B882541D19BF060021A4C7 /* PracticalSocket.h */,
 				4DF8785E1D0947F000B97160 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -154,6 +166,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				20B882521D19BC190021A4C7 /* Communication.cpp in Sources */,
+				20B882551D19BF060021A4C7 /* PracticalSocket.cpp in Sources */,
 				4D199E9A1D0948D1008F8B97 /* mesh.cpp in Sources */,
 				4D199E991D0948D1008F8B97 /* raytracing.cpp in Sources */,
 				4D199E9B1D0948D1008F8B97 /* main.cpp in Sources */,

@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Vec3D.h"
-#include "mesh.h";
+#include "mesh.h"
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <algorithm>
 #include <mutex>
+#include "float.h"
+#include "mmintrin.h"
 
 #define min3(x, y, z) min(x, min(y, z))
 #define max3(x, y, z) max(x, max(y, z))
@@ -81,7 +83,6 @@ struct Intersection
 
 };
 
-
 struct KDTree
 {
 	Voxel voxel;
@@ -109,52 +110,53 @@ struct KDTree
 
 	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
 	{
+    
 		if (isLeaf())
 		{
-			for (auto index : indices)
-			{
-				Triangle & triangle = triangles[index];
-
-				Vec3Df & v0 = vertices[triangle.v[0]].p;
-				Vec3Df & v1 = vertices[triangle.v[1]].p;
-				Vec3Df & v2 = vertices[triangle.v[2]].p;
-
-				Vec3Df e1 = v1 - v0;
-				Vec3Df e2 = v2 - v0;
-
-				Vec3Df P = Vec3Df::crossProduct(direction, e2);
-
-				register float determinant = Vec3Df::dotProduct(P, e1);
-
-				if (determinant > -EPS && determinant < EPS)
-					continue;
-
-				float inverse = 1.0f / determinant;
-
-				Vec3Df T = (origin - v0);
-
-				float u = Vec3Df::dotProduct(T, P) * inverse;
-
-				if (u < 0 || u > 1.0f)
-					continue;
-
-				Vec3Df Q = Vec3Df::crossProduct(T, e1);
-
-				float v = Vec3Df::dotProduct(direction, Q) * inverse;
-
-				if (v < 0 || u + v > 1.0f)
-					continue;
-
-				float t = Vec3Df::dotProduct(e2, Q) * inverse;
-
-				if (t > 0.0001 && t < intersection.distance)
-				{
-					intersection.distance = t;
-					intersection.position = v0 + u * e1 + v * e2;
-					intersection.triangle = index;
-					intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
-				}
-			}
+            for (auto index : indices)
+            {
+                Triangle & triangle = triangles[index];
+                
+                Vec3Df & v0 = vertices[triangle.v[0]].p;
+                Vec3Df & v1 = vertices[triangle.v[1]].p;
+                Vec3Df & v2 = vertices[triangle.v[2]].p;
+                
+                Vec3Df e1 = v1 - v0;
+                Vec3Df e2 = v2 - v0;
+                
+                Vec3Df P = Vec3Df::crossProduct(direction, e2);
+                
+                register float determinant = Vec3Df::dotProduct(P, e1);
+                
+                if (determinant > -EPS && determinant < EPS)
+                    continue;
+                
+                float inverse = 1.0f / determinant;
+                
+                Vec3Df T = (origin - v0);
+                
+                float u = Vec3Df::dotProduct(T, P) * inverse;
+                
+                if (u < 0 || u > 1.0f)
+                    continue;
+                
+                Vec3Df Q = Vec3Df::crossProduct(T, e1);
+                
+                float v = Vec3Df::dotProduct(direction, Q) * inverse;
+                
+                if (v < 0 || u + v > 1.0f)
+                    continue;
+                
+                float t = Vec3Df::dotProduct(e2, Q) * inverse;
+                
+                if (t > 0.0001 && t < intersection.distance)
+                {
+                    intersection.distance = t;
+                    intersection.position = v0 + u * e1 + v * e2;
+                    intersection.triangle = index;
+                    intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
+                }
+            }
 		}
 		else
 		{

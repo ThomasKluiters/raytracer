@@ -2,6 +2,7 @@
 #define MESH_H_sdfjlasdfjfsdfjljfasdf
 
 #include "Vertex.h"
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <string>
@@ -221,10 +222,116 @@ public:
         t[2] = t2.v[2];
         return (*this);
     }
-	//vertex position 
+
+	/**
+	 * Precompute a given set of initial values for this triangle, to be used later to accelerate
+	 * triangle-ray intersection.
+	 */
+	inline void precomputeValues(std::vector<Vertex> vertices)
+	{
+		// Compute edges
+		e0 = vertices[v[1]].p - vertices[v[0]].p;
+		e1 = vertices[v[2]].p - vertices[v[0]].p;
+
+		// Compute the normal
+		n = Vec3Df::crossProduct(e0, e1);
+
+		// Precompute normal data
+		int a = std::abs(n[0]), b = std::abs(n[1]), c = std::abs(n[2]);
+
+		// Manually "sort" the normal array
+		if (a > b)
+		{
+			if (b > c)
+			{
+				iU = 2;
+				iV = 1;
+				iW = 0;
+			}
+			else
+			{
+				if (a > c)
+				{
+					iU = 1;
+					iV = 2;
+					iW = 0;
+				}
+				else
+				{
+					iU = 1;
+					iV = 0;
+					iW = 2;
+				}
+			}
+		}
+		else
+		{
+			if (b < c)
+			{
+				iU = 0;
+				iV = 1;
+				iW = 2;
+			}
+			else
+			{
+				if (a > c)
+				{
+					iU = 2;
+					iV = 0;
+					iW = 1;
+				}
+				else
+				{
+					iU = 0;
+					iV = 2;
+					iW = 1;
+				}
+			}
+		}
+
+		nu = n[iU] / n[iW];
+		nv = n[iV] / n[iW];
+
+		// Precompute vertex data
+		pu = vertices[v[0]].p[iU];
+		pv = vertices[v[0]].p[iV];
+		np = (nu * pu + nv * pv + vertices[v[0]].p[iW]);
+
+		// Precompute edges data
+		int iWpower = std::pow(-1, iW);
+		e0u = iWpower * e0[iU] / n[iW];
+		e0v = iWpower * e0[iV] / n[iW];
+		e1u = iWpower * e1[iU] / n[iW];
+		e1v = iWpower * e1[iV] / n[iW];
+	}
+
+	// Vertex position 
     unsigned int v[3];
-	//texture coordinate
+	// Texture coordinate
     unsigned int t[3];
+	// Triangle Normal
+	Vec3Df n;
+	// Edges
+	Vec3Df e0;
+	Vec3Df e1;
+
+	// Pre-computed values for SIMD acceleration
+	// Normal data
+	float nu;
+	float nv;
+	// Vertex data
+	float np;
+	float pu;
+	float pv;
+	// Edges data
+	float e0u;
+	float e0v;
+	float e1u;
+	float e1v;
+
+	int iU;
+	int iV;
+	int iW;
 };
 
 /************************************************************
