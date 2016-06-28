@@ -45,13 +45,13 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
-unsigned int WindowSize_X = 200;	// X-resolution
-unsigned int WindowSize_Y = 200;	// Y-resolution
+unsigned int WindowSize_X = 800;	// X-resolution
+unsigned int WindowSize_Y = 800;	// Y-resolution
 
 unsigned int startX = 0;
-unsigned int endX = 200;
+unsigned int endX = 800;
 unsigned int startY = 0;
-unsigned int endY = 200;
+unsigned int endY = 800;
 
 boolean headlessMode;
 

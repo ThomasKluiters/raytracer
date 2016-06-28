@@ -156,7 +156,7 @@ struct KDTree
                     intersection.distance = t;
                     intersection.position = v0 + u * e1 + v * e2;
                     intersection.triangle = index;
-                    intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
+					intersection.normal = Vec3Df::crossProduct(e1, e2);//(1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
                 }
                 
             }
