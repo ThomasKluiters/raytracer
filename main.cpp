@@ -68,7 +68,7 @@ unsigned int WindowSize_Y = 900;	// Y-resolution
 bool rendering = false;
 bool realtime_rendering = false;
 
-std::string sceneData = "DoF-test.obj";
+std::string sceneData = "bare_test.obj";
 std::string renderOutput = "result.ppm";
 #define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING false
@@ -366,6 +366,25 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 	}
 
+	case 'o':
+	{
+		myDebugScreen.toggleOptics();
+		break;
+	}
+
+	case 'O':
+	{
+		Vec3Df intersect, normal = Vec3Df(0.0,0.0,0.0);
+		myDebugScreen.intersectWithSphere(1.0, Vec3Df(0.0,0.0,0.0),		// Sphere data
+											   Vec3Df(-3.0,0.0,0.0),		// Ray data
+											   Vec3Df(0.0, 0.5,0.0),
+											   intersect,
+											   normal
+											   );
+		cout << "Intersect: " << intersect << endl;
+		cout << "normal: " << normal << endl;
+		break;
+	}
 
 	// Click 'r'.
 	case 'r':
@@ -518,10 +537,6 @@ void rayTraceStart(	Vec3Df origin00, Vec3Df dest00,
 	}
 
 	rayTracingDone = true;
-	
-
-	myCamera.sensor.writeToDisk("result.ppm");
-
 	progressThread.join();
 	rendering = false;
 }
