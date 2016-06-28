@@ -2,6 +2,8 @@
 #define matrix_H
 
 #include <iostream>
+#include <cmath>
+#include <vector>
 using std::cout;
 using std::endl;
 
@@ -49,7 +51,6 @@ void inverse( const double *m, double *p )
 	// derniere ligne
 	p[3] = p[7] = p[11] = 0; p[15] = 1;
 }
-
 
 
 #endif

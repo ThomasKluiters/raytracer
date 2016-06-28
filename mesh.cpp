@@ -327,7 +327,7 @@ bool Mesh::loadMesh(const char * filename, bool randomizeTriangulation)
                     
                     triangles.push_back(Triangle(vhandles[v0], texhandles[t0],
                                                  vhandles[v1], texhandles[t1],
-                                                 vhandles[v2], texhandles[t2])); // push triangle consisting of indices of vertices and texcoords
+                                                 vhandles[v2], texhandles[t2])); // push triangle consisting of indices of vertices
                     triangleMaterials.push_back(m);                              // push material index for triangle
                 }
             }

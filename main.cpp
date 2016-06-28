@@ -23,6 +23,10 @@
 #include "mesh.h"
 #include "traqueboule.h"
 #include "imageWriter.h"
+#include <map>
+#include <string>
+
+#define PRINT_PROGRESS   0  // 0: do not print progress; 1: print progress
 
 /**
  * This is the main application. Most of the code in here does not need to be modified. It is enough to take a look at
@@ -37,6 +41,8 @@ Vec3Df MyCameraPosition;
 std::vector<Vec3Df> MyLightPositions;
 
 Mesh MyMesh;						// Main mesh
+std::map <std::string, Texture> MyTextures; // hold (textureName, Texture) pairs
+
 unsigned int WindowSize_X = 1440;	// X-resolution
 unsigned int WindowSize_Y = 900;	// Y-resolution
 
@@ -92,7 +98,7 @@ int main(int argc, char** argv)
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
     int LightPos[4] = { 0, 0, 2, 0 };
-    int MatSpec[4] = { 1, 1, 1, 1 };
+    // int MatSpec[4] = { 1, 1, 1, 1 };
     glLightiv(GL_LIGHT0, GL_POSITION, LightPos);
     
     // Normals will be normalized in the graphics pipeline.
@@ -258,7 +264,7 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     while(! *rayTracingDone) {
         float progressPercentage = 100 * std::accumulate((*progress).begin(), (*progress).end(), 0.0f) / NUM_THREADS;
         
-        std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
+        if (PRINT_PROGRESS) std::cout << (((float)((int)(progressPercentage * 100)) / 100)) << " %" << std::endl;
     }
     
     std::cout << "100 %" << std::endl;

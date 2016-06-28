@@ -52,6 +52,8 @@
 		4D199EA01D094918008F8B97 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		4D199EA21D09491C008F8B97 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		4DF8785D1D0947F000B97160 /* Raytracing */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Raytracing; sourceTree = BUILT_PRODUCTS_DIR; };
+		B534679B1D19464400375A67 /* baksteen.mtl */ = {isa = PBXFileReference; lastKnownFileType = text; path = baksteen.mtl; sourceTree = "<group>"; };
+		B534679C1D19464C00375A67 /* baksteen.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = baksteen.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +76,8 @@
 				4D199EA01D094918008F8B97 /* OpenGL.framework */,
 				4D199E9C1D094905008F8B97 /* dodgeColorTest.obj */,
 				4D199E9D1D094905008F8B97 /* dodgeColorTest.mtl */,
+				B534679C1D19464C00375A67 /* baksteen.obj */,
+				B534679B1D19464400375A67 /* baksteen.mtl */,
 				4D199E9E1D094905008F8B97 /* cube.obj */,
 				4D199E9F1D094905008F8B97 /* cube.mtl */,
 				4D199E8F1D0948D1008F8B97 /* Vertex.h */,

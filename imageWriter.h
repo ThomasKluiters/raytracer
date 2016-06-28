@@ -119,7 +119,7 @@ bool Image::writeImage(const char * filename)
 	for (unsigned int i = 0; i < _image.size(); ++i)
 		imageC[i] = (unsigned char)(_image[i] * 255.0f);
 
-	int t = fwrite(&(imageC[0]), _width * _height * 3, 1, file);
+	size_t t = fwrite(&(imageC[0]), _width * _height * 3, 1, file);
 	if (t != 1)
 	{
 		printf("Dump file problem... fwrite\n");

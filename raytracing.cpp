@@ -50,7 +50,7 @@ void init()
     //otherwise the application will not load properly
     //MyMesh.loadMesh("cube.obj", true);
     // MyMesh.loadBMP("brickwall.bmp");
-    MyMesh.loadMesh("baksteen.obj", true);
+    MyMesh.loadMesh("dodgeColorTest.obj", true);
     MyMesh.computeVertexNormals();
     
     //one first move: initialize the first light source
