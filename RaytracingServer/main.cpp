@@ -21,7 +21,11 @@
 #include <iostream>           // For cerr and cout
 #include <cstdlib>            // For atoi()
 #include "ImageWriter.h"
-#include "pthread.h"          // For POSIX threads
+#ifdef __WIN32
+#include "pthread.h"
+#else
+#include <pthread.h>
+#endif
 #include <vector>
 
 unsigned int NUM_CLIENTS;
