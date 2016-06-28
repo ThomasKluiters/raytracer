@@ -49,9 +49,11 @@ unsigned int WindowSize_X = 200;	// X-resolution
 unsigned int WindowSize_Y = 200;	// Y-resolution
 
 unsigned int startX = 0;
-unsigned int endX = 0;
+unsigned int endX = 200;
 unsigned int startY = 0;
-unsigned int endY = 0;
+unsigned int endY = 200;
+
+boolean headlessMode;
 
 #define ANTIALIASING false
 
@@ -60,7 +62,7 @@ unsigned int endY = 0;
 #define NUM_BLOCKS_Y 4              // Number of blocks in y direction
 
 
-
+void renderScene();
 
 /**
  * Drawing function, which draws an image (frame) on the screen.
@@ -89,7 +91,35 @@ void keyboard(unsigned char key, int x, int y);
  */
 int main(int argc, char** argv)
 {
-    
+	headlessMode = argc > 1 && argv[1][0] == 't';
+
+	if (headlessMode)
+	{
+		const string serverIP = argv[2];
+		const unsigned short serverPort = atoi(argv[3]);
+		cout << serverIP << endl;
+		cout << serverPort << endl;
+
+		connection = new TCPSocket(serverIP, serverPort);
+
+		// Receive info from server
+		vector<int> bounds = Communication::receiveInitMessage();
+		WindowSize_X = bounds[0];
+		WindowSize_Y = bounds[1];
+		startX = bounds[2];
+		startY = bounds[3];
+		endX = bounds[4];
+		endY = bounds[5];
+
+		// Set an initial lichtbak
+		lichtbak(Vec3Df(0.00125903, 0.00209838, 3.99), Vec3Df(1.25903, 2.09839, -6.0));
+
+		init();
+		renderScene();
+
+		return 0;
+	}
+
     glutInit(&argc, argv);
     
     // Set up framebuffer.
@@ -140,28 +170,10 @@ int main(int argc, char** argv)
     glutMotionFunc(tbMotionFunc);  // uses mouse
     glutIdleFunc(animate);
     
-    const string serverIP = argv[1];
-    const unsigned short serverPort = atoi(argv[2]);
-	cout << serverIP << endl;
-	cout << serverPort << endl;
-    
-    connection = new TCPSocket(serverIP, serverPort);
-    
-    // Receive info from server
-    vector<int> bounds = Communication::receiveInitMessage();
-    WindowSize_X = bounds[0];
-    WindowSize_Y = bounds[1];
-    startX = bounds[2];
-    startY = bounds[3];
-    endX = bounds[4];
-    endY = bounds[5];
-    
     init();
     
-    // Main loop for glut. This just runs your application.
-    glutMainLoop();
-    
-    // Execution never reaches this point.
+	glutMainLoop();
+
     return 0;
 }
 
@@ -350,6 +362,122 @@ void printProgress(std::vector<float> *progress, bool *rayTracingDone) {
     
 }
 
+void renderScene()
+{
+	cout << "Raytracing" << endl;
+
+	if (!headlessMode)
+	{
+		// Compute the frustum attributes
+		produceRay(0, 0, &origin00, &dest00);
+		produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
+		produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
+		produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
+	}
+
+	// Setup an image with the size of the current image.
+	Image result(WindowSize_X, WindowSize_Y);
+
+	// Vector to store threads
+	std::vector<std::thread> precomputeThreads;
+
+	// Precompute values for triangles
+	std::time_t startTimePrecompute = std::time(nullptr);
+
+	unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
+
+	for (unsigned int t = 0; t < NUM_THREADS; ++t) {
+
+		if ((t * trianglesPerThread) < MyMesh.triangles.size()) {
+
+			std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
+
+			precomputeThreads.push_back(std::thread(
+				precomputeTriangleValues,
+				begin,
+				trianglesPerThread
+			));
+
+		}
+	}
+
+	// Join all ray tracing threads
+	for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread) {
+		thread->join();
+	}
+	std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
+
+
+	// Starting time, used to display running time
+	std::time_t startTime = std::time(nullptr);
+
+	// Block size
+	unsigned int numberOfXPixelsInBlock = ceil((endX - startX) / NUM_BLOCKS_X);
+	unsigned int numberOfYPixelsInBlock = ceil((endY - startY) / NUM_BLOCKS_Y);
+
+	// Vector to store threads
+	std::vector<std::thread> threads;
+
+	// Vector to store progress of the threads
+	std::vector<float> progress(NUM_THREADS, 0.f);
+
+	bool rayTracingDone = false;
+
+	// Create thread that prints progress
+	std::thread progressThread(printProgress, &progress, &rayTracingDone);
+
+	// Create threads for the actual ray tracing
+	for (unsigned int xBlock = 0; xBlock < NUM_BLOCKS_X; ++xBlock) {
+
+		for (unsigned int yBlock = 0; yBlock < NUM_BLOCKS_Y; ++yBlock) {
+
+
+			threads.push_back(std::thread(
+				performRaytracingBlock,
+				startX + xBlock * numberOfXPixelsInBlock, // start x
+				startX + (xBlock + 1) * numberOfXPixelsInBlock, // end x
+				startY + yBlock * numberOfYPixelsInBlock, // start y
+				startY + (yBlock + 1) * numberOfYPixelsInBlock, // end y
+				origin00,
+				origin01,
+				origin10,
+				origin11,
+				dest00,
+				dest01,
+				dest10,
+				dest11,
+				&result,
+				xBlock * NUM_BLOCKS_Y + yBlock, // thread number
+				&progress
+			));
+
+
+		}
+
+	}
+
+
+	// Join all ray tracing threads
+	for (std::vector<std::thread>::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
+		thread->join();
+	}
+
+	rayTracingDone = true;
+
+	// Store result
+	result.writeImage("result.ppm");
+
+	if (headlessMode)
+	{
+		Communication::sendImage(result);
+	}
+
+	progressThread.join();
+
+	// Print running time
+	std::cout << "The rendering took " << std::time(nullptr) - startTime << " seconds" << std::endl;
+}
+
 
 /**
  * React to keyboard input.
@@ -417,107 +545,7 @@ void keyboard(unsigned char key, int x, int y)
         case 'r':
         {
             // Pressing r will launch the raytracing.
-            cout << "Raytracing" << endl;
-            
-            // Setup an image with the size of the current image.
-            Image result(WindowSize_X, WindowSize_Y);
-            
-            // Vector to store threads
-            std::vector<std::thread> precomputeThreads;
-            
-            // Precompute values for triangles
-            std::time_t startTimePrecompute = std::time(nullptr);
-            
-            unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
-            
-            for (unsigned int t = 0; t < NUM_THREADS; ++t) {
-                
-                if ( (t * trianglesPerThread) < MyMesh.triangles.size() ) {
-                
-                    std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
-                
-                    precomputeThreads.push_back(std::thread(
-                                              precomputeTriangleValues,
-                                              begin,
-                                              trianglesPerThread
-                                  ));
-                    
-                }
-            }
-                                           
-            // Join all ray tracing threads
-            for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread) {
-                thread->join();
-            }
-            std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
-            
-
-            // Starting time, used to display running time
-            std::time_t startTime = std::time(nullptr);
-            
-            // Block size
-            unsigned int numberOfXPixelsInBlock = ceil( (endX - startX) / NUM_BLOCKS_X);
-            unsigned int numberOfYPixelsInBlock = ceil( (endY - startY) / NUM_BLOCKS_Y);
-            
-            // Vector to store threads
-            std::vector<std::thread> threads;
-            
-            // Vector to store progress of the threads
-            std::vector<float> progress (NUM_THREADS, 0.f);
-            
-            bool rayTracingDone = false;
-            
-            // Create thread that prints progress
-            std::thread progressThread(printProgress, &progress, &rayTracingDone);
-            
-            // Create threads for the actual ray tracing
-            for (unsigned int xBlock = 0; xBlock < NUM_BLOCKS_X; ++xBlock) {
-                
-                for (unsigned int yBlock = 0; yBlock < NUM_BLOCKS_Y; ++yBlock) {
-                
-                
-                    threads.push_back(std::thread(
-                                     performRaytracingBlock,
-                                     startX + xBlock * numberOfXPixelsInBlock, // start x
-                                     startX + (xBlock+1) * numberOfXPixelsInBlock, // end x
-                                     startY + yBlock * numberOfYPixelsInBlock, // start y
-                                     startY + (yBlock+1) * numberOfYPixelsInBlock, // end y
-                                     origin00,
-                                     origin01,
-                                     origin10,
-                                     origin11,
-                                     dest00,
-                                     dest01,
-                                     dest10,
-                                     dest11,
-                                     &result,
-                                     xBlock * NUM_BLOCKS_Y + yBlock, // thread number
-                                     &progress
-                    ));
-                    
-                    
-                }
-             
-            }
-            
-            
-            // Join all ray tracing threads
-            for (std::vector<std::thread>::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
-                thread->join();
-            }
-            
-            rayTracingDone = true;
-            
-            // Store result
-            result.writeImage("result.ppm");
-            
-            Communication::sendImage(result);
-            
-            progressThread.join();
-            
-            // Print running time
-            std::cout << "The rendering took " << std::time(nullptr) - startTime << " seconds" << std::endl;
-            
+			renderScene();
             break;
         }
             

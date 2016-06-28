@@ -119,8 +119,8 @@ bool Image::writeImage(const char * filename)
 
     for (unsigned int i = 0; i < _image.size(); ++i) {
         
-        if (_image[i] > 0)
-            cout << "RGB " << _image[i] << endl;
+//        if (_image[i] > 0)
+//            cout << "RGB " << _image[i] << endl;
         
         imageC[i] = (unsigned char)(_image[i] * 255.0f);
     }
