@@ -214,15 +214,15 @@ void HandleTCPClient(TCPSocket *sock) {
 		int i = stoi(s.substr(0, s.find(delimiter)));
 
 		float rgbValue = stof(s.substr(s.find(delimiter) + 1));
-		if (rgbValue > 0)
-			cout << "Received message: " << i << "RGB " << rgbValue << endl;
+//		if (rgbValue > 0)
+//			cout << "Received message: " << i << "RGB " << rgbValue << endl;
 
 		result->setValue(i, rgbValue);
 	}
 
 	doneClients++;
 
-	cout << "Client " << currentClient << " has sent his data, there are " << currentClients - doneClients << " clients left." << endl;
+	cout << "Client " << currentClient << " has sent his data, there are " << NUM_CLIENTS - doneClients << " clients left." << endl;
 
 	result->writeImage("result.ppm");
 

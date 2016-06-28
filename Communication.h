@@ -89,6 +89,8 @@ public:
         float rgbValue;
         char message [messageLength];
         
+		cout << "Image Data Sending: Yo, some image data incoming, right about.... now." << endl;
+
         for (unsigned int i = 0; i < image._image.size(); ++i) {
             
             rgbValue =  (image._image[i] * 255.0f);
@@ -108,7 +110,7 @@ public:
         
         connection->send((const char*) &"/", 1);
 		
-		cout << "Image sent 'successfully' (yeah right, we'll see about that later)." << endl;
+		cout << "Image Data Sent: That's all image data (for now)." << endl;
         
     }
 
