@@ -232,6 +232,8 @@ void yourDebugDraw()
 													glPopAttrib();
 													*/
 
+
+
 	for (int i = 0; i < testArrayfinish.size(); ++i) {
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
