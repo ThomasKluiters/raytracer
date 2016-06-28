@@ -34,6 +34,7 @@ public:
 	std::string sceneData;
 	void toggleOverlay();
 	void toggleRenderOverlay();
+	void toggleOptics();
 	void traceUpdate(float value);
 	void traceEnd();
 
@@ -56,6 +57,8 @@ public:
 
 	std::string rayTraceProgress(float progressPercentage);
 	float renderProgress;
+	bool intersectWithSphere(float radius, Vec3Df spherePos, const Vec3Df & origin, const Vec3Df & dest, Vec3Df & intersectPos, Vec3Df & normal);
+	void drawCircle(const Vec3Df & origin, float radius, float fromAngle, float toAngle);
 
 private:
 	std::map <std::string, int> integers_to_track;
@@ -77,7 +80,7 @@ private:
 	// Dynamic settings
 	int CURRENT_Y_OFFSET;		// Indicates the current distance from the top of the window.
 	bool SHOW_RENDER_BUFFER;
-
+	bool SHOW_OPTICS;
 
 	// Manual settings.
 	const int CHAR_OFFSET = 18;						 // Offset in pixels between each line drawn
@@ -101,7 +104,17 @@ private:
 	void printStrings(int x_offset);
 	void printFloats(int x_offset);
 	void printVectors(int x_offset);
+	void drawOptics();
 
+	void drawLensElement(const Vec3Df & origin, const float radius, const float aperture);
+
+	
+	void traceLensSystem(Vec3Df & opticalOrigin, Vec3Df & rayOrigin, Vec3Df & rayDest);
+
+	bool refractMyRay(float n1, float n2, const Vec3Df & normal, const Vec3Df rayIncident, Vec3Df & transmissiveRay);
+
+	
+	
 	void printToFrame(std::string toPrint);
 	void printLines(int x_offset);			
 	void resetOffsetY();				// Clears the vertical offset back to the border-value.

@@ -51,7 +51,7 @@ void FilmPlane::writeToDisk(std::string fileName)
  * Fills this 2D array with the base-colour
  */
 void FilmPlane::initImagePlane()
-{//unsigned int width, unsigned int height
+{
 	if(height > 0 && width > 0) 
 	{
 		imageData.resize(width);

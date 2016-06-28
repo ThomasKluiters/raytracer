@@ -12,5 +12,7 @@ public:
 
 	~LensElement();
 
+	float LensElement::getApertureRadius();
+
 };
 

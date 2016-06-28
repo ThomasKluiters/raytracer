@@ -34,6 +34,9 @@ public:
 	// Image sensor properties
 	FilmPlane sensor = FilmPlane(1, 1);
 
+	//Lenses
+	Lens currentLens = Lens();	// Default 100mm double gauss lens
+
 	// Rendermodes
 	bool thinLens;
 	bool thickLens;
