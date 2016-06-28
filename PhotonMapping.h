@@ -1,23 +1,71 @@
 #pragma once
 
 #include "Vec3D.h"
+#include "KDTree.h"
 #include <unordered_map>
+#include <queue>
+#include <functional>
+
+const int N = 20;
+
+#define SHADOW 0
+#define DIFFUSE 1
+#define CAUSTIC 2 
 
 struct Photon {
 	
 	Vec3Df position;
+
 	Vec3Df power;
 	
-	float phi, theta;
+	Vec3Df incident;
 
-	short flag;
+	int type;
+
+};
+
+struct Radiance {
+
+	Photon photon;
+
+	float distance;
 
 };
 
 struct Box
 {
-	Vec3Df max;
-	Vec3Df min;
+	Vec3Df v_max;
+	Vec3Df v_min;
+
+	bool contains(Vec3Df & point)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			if (v_max[i] < point[i] || v_min[i] > point[i])
+				return false;
+		}
+		return true;
+	}
+
+	float distance(Vec3Df & point)
+	{
+		Vec3Df center = (v_max + v_min) * 0.5f;
+		Vec3Df dir = point - center;
+
+		float tmin = -FLT_MAX;
+		float tmax = FLT_MAX;
+
+		for (byte dimension = X_AXIS; dimension <= Z_AXIS; dimension++)
+		{
+			float t1 = (v_min[dimension] - point[dimension]) / dir[dimension];
+			float t2 = (v_max[dimension] - point[dimension]) / dir[dimension];
+
+			tmin = max(tmin, min(t1, t2));
+			tmax = min(tmax, max(t1, t2));
+		}
+
+		return tmin;
+	}
 };
 
 
@@ -34,6 +82,82 @@ public:
 
 	PhotonMap(vector<Photon> photons, Box box) : box(box), photons(photons) {}
 
+	bool leaf()
+	{
+		return left == NULL && right == NULL;
+	}
+
+	void locatePhotons(Vec3Df position, vector<Radiance> & heap)
+	{
+
+		if (left && left->box.contains(position))
+		{
+			left->locatePhotons(position, heap);
+
+			float distance = right->box.distance(position);
+			Radiance radiance = heap.front();
+
+			if (heap.size() == N && radiance.distance < distance)
+			{
+				return;
+			}
+
+			if (right && heap.size() < N)
+			{
+				right->locatePhotons(position, heap);
+			}
+		}
+		else if (right && right->box.contains(position))
+		{
+			right->locatePhotons(position, heap);
+
+			float distance = left->box.distance(position);
+			Radiance radiance = heap.front();
+
+			if (heap.size() == N && radiance.distance < distance)
+			{
+				return;
+			}
+
+			if (left && heap.size() < N)
+			{
+				left->locatePhotons(position, heap);
+			}
+		}
+
+		if (leaf())
+		{
+			for (auto photon : photons)
+			{
+				float radius = Vec3Df::distance(photon.position, position);
+				if (heap.size() < N)
+				{
+					heap.push_back({
+						photon,
+						radius
+					});
+					push_heap(heap.begin(), heap.end());
+				}
+				else
+				{
+					Radiance & top = heap.front();
+					if (top.distance > radius)
+					{
+						pop_heap(heap.begin(), heap.end());
+						heap.pop_back();
+
+						heap.push_back({
+							photon,
+							radius
+						});
+
+						push_heap(heap.begin(), heap.end());
+					}
+				}
+			}
+		}
+	}
+
 };
 
 class PhotonMapBuilder
@@ -44,7 +168,7 @@ public:
 	const int pointTestCost = 4;
 	const int sphereTestCost = 150;
 
-	void add(Photon & photon)
+	void add(Photon photon)
 	{
 		photons.push_back(photon);
 	}
@@ -100,10 +224,10 @@ public:
 	pair<Box, Box> splitBox(Box box, float position, int dimension)
 	{
 		Box V_l = box;
-		V_l.max[dimension] = position;
+		V_l.v_max[dimension] = position;
 
 		Box V_r = box;
-		V_r.min[dimension] = position;
+		V_r.v_min[dimension] = position;
 
 		return make_pair(V_l, V_r);
 	}
@@ -111,9 +235,9 @@ public:
 	float SA(Box box)
 	{
 		float lengths[3] = {
-			abs(box.max[0] - box.min[0]),
-			abs(box.max[1] - box.min[1]),
-			abs(box.max[2] - box.min[2])
+			abs(box.v_max[0] - box.v_min[0]),
+			abs(box.v_max[1] - box.v_min[1]),
+			abs(box.v_max[2] - box.v_min[2])
 		};
 
 		return 2 * (lengths[0] * lengths[1] + lengths[1] * lengths[2] + lengths[2] * lengths[0]);
@@ -175,10 +299,7 @@ public:
 
 		return split;
 	}
-
-#define L 0
-#define R 1
-
+	
 	PhotonMap * construct(vector<Event> & events, Box box)
 	{
 		Split split = findPlane(events, box);
@@ -215,11 +336,11 @@ public:
 
 				if (eventPosition < position)
 				{
-					classifications[events[eventIndex].photon] = L;
+					classifications[events[eventIndex].photon] = 0;
 				}
 				else
 				{
-					classifications[events[eventIndex].photon] = R;
+					classifications[events[eventIndex].photon] = 1;
 				}
 			}
 		}
@@ -232,11 +353,11 @@ public:
 			const int photon = events[eventIndex].photon;
 			const int side = classifications[photon];
 
-			if (side == L)
+			if (side == 0)
 			{
 				left.push_back(events[eventIndex]);
 			}
-			else if (side == R)
+			else if (side == 1)
 			{
 				right.push_back(events[eventIndex]);
 			}
@@ -286,6 +407,10 @@ public:
 	}
 
 };
+
+bool operator <(const Radiance& a, const Radiance& b) {
+	return a.distance < b.distance;
+}
 
 bool operator <(const PhotonMapBuilder::Event& a, const PhotonMapBuilder::Event& b) {
 	return

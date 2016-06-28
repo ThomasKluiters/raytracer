@@ -17,25 +17,29 @@
 #include "PhotonMapping.h"
 
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
-Vec3Df testRayOrigin;
+Vec3Df testRayOrigin;	Vec3Df position = {};
+
 Vec3Df testRayDestination;
 
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
 std::vector<Vec3Df> testArraycolor;
 
+std::vector<Vec3Df> testDots;
+std::vector<Vec3Df> testColors;
+
 int maxDepth;
-int photons = 1000;
+int photons = 10000;
 bool draw;
 
-std::vector<Light> lights;
+std::vector<Light*> lights;
 
 
 KDTree* tree;
 
-PhotonMap globalMap;
-PhotonMap causticMap;
-PhotonMap volumeMap;
+PhotonMap* globalMap;
+PhotonMap* causticMap;
+PhotonMap* volumeMap;
 
 /**
 * Use this function for any preprocessing of the mesh.
@@ -60,53 +64,66 @@ void init()
 	maxDepth = 4;
 	draw = false;
 
-	KDTreeBuilder builder(MyMesh);
-	tree = builder.build();
+	KDTreeBuilder kd(MyMesh);
+	tree = kd.build();
 }
 
-void emitPhotons()
-{
-	PhotonMapBuilder builder;
 
-	for (auto light : lights)
+void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic, bool source)
+{
+	Intersection intersection = tree->trace(ray.source, ray.direction, MyMesh.triangles, MyMesh.vertices, -1);
+
+	if (!intersection.hit())
 	{
-		Vec3Df & power = light.power;
-		vector<LightRay> rays;
-
-		light.emit(photons, rays);
-
-		for (auto ray : rays)
-		{
-			tracePhoton(ray, builder, false);
-		}
+		return;
 	}
-}
 
-void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic)
-{
-	Intersection intersection = tree->trace(ray.source, ray.direction, MyMesh.triangles, MyMesh.vertices);
 	const int materialIndex = MyMesh.triangleMaterials[intersection.triangle];
 	Material & material = MyMesh.materials[materialIndex];
 
 	Vec3Df diffuse = material.Kd();
 	Vec3Df specular = material.Kd();
+	Vec3Df incident = -ray.direction;
+
+	incident.normalize();
 
 	float P_r = fmaxf(diffuse[0] + specular[0], fmaxf(diffuse[1] + specular[1], diffuse[2] + specular[2]));
 	float P_d = (diffuse[0] + diffuse[1] + diffuse[2]) / (diffuse[0] + diffuse[1] + diffuse[2] + specular[0] + specular[1] + specular[2]) * P_r;
 	float P_s = P_r - P_d;
+
+
 
 	if (material.has_Kd())
 	{
 		builder.add({
 			intersection.position,
 			ray.power,
-			0.1f,
-			0.1f,
-			0
+			incident,
+			DIFFUSE
 		});
+		
+		Intersection shadow = intersection;
+		if (source)
+		{
+			do {
+
+				Vec3Df power(0, 0, 0);
+
+				shadow = tree->trace(shadow.position, ray.direction, MyMesh.triangles, MyMesh.vertices, intersection.triangle);
+				if (shadow.hit())
+				{
+					builder.add({
+						shadow.position,
+						power,
+						incident,
+						SHADOW
+					});
+				}
+			} while (shadow.hit());
+		}
 	}
-	
-	float r = rand() / (RAND_MAX + .0f);
+
+	float r = rand() / (RAND_MAX + .0f) * (P_r + P_d + P_s);
 
 	if (r >= P_s + P_d)
 	{
@@ -119,13 +136,13 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic)
 		ray.power[0] * specular[0] * D,
 		ray.power[1] * specular[1] * D,
 		ray.power[2] * specular[2] * D
-	);
+		);
 
-	if(r < P_s + P_d)
+	if (!caustic && r < P_s + P_d)
 	{
 		caustic = true;
 	}
-	
+
 	Vec3Df N = intersection.normal;
 	N.normalize();
 
@@ -133,19 +150,57 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic)
 	R.normalize();
 
 	Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+	reflection.normalize();
 
 	Vec3Df & position = intersection.position;
 
 	tracePhoton(
-		{
-			position,
-			reflection,
-			power
-		},
+	{
+		position,
+		reflection,
+		power
+	},
 		builder,
-		caustic
-	);
+		caustic,
+		false
+		);
 }
+
+void emitPhotons()
+{
+	PhotonMapBuilder builder;
+
+	for (auto ptr : lights)
+	{
+		Light  & light = *ptr;
+
+		Vec3Df & power = light.power;
+		vector<LightRay> rays;
+
+		while (builder.photons.size() < photons)
+		{
+			LightRay ray = light.emit();
+			tracePhoton(ray, builder, false, true);
+		}
+		
+	}
+
+	globalMap = builder.build();
+
+
+
+	for (auto photon : builder.photons)
+	{
+		Vec3Df color = photon.power;
+		Vec3Df position = photon.position;
+		
+		testDots.push_back(position);
+		testColors.push_back(color);
+	}
+
+	glFlush();
+}
+
 
 /**
 * Return the color of your pixel.
@@ -153,7 +208,7 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic)
 //return the color of your pixel.
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
 {
-	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
+	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices, -1);
 
 	if (!intersection.hit())
 	{
@@ -168,7 +223,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 	Vec3Df normal = intersection.normal;
 	Vec3Df location = intersection.position;
 	Vec3Df localColor = MyMesh.materials[material].Ka();
-
 
 	if (depth < 6 && false) {
 		Vec3Df N = intersection.normal;
@@ -188,6 +242,38 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		//return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
 
 
+	}
+
+	vector<Radiance> radiance;
+
+	globalMap->locatePhotons(location, radiance);
+
+	if (radiance.size() > 0)
+	{
+		Radiance max = radiance.front();
+		float radius = max.distance;
+
+		float surface = radius * radius * PI;
+
+		float inv = 1.0f / surface;
+
+		Vec3Df irridance = Vec3Df(0, 0, 0);
+
+		Vec3Df diffuse = MyMesh.materials[material].Kd();
+
+		for (auto & rad : radiance)
+		{
+			float angle = Vec3Df::dotProduct(rad.photon.incident, normal);
+			if (angle > 0.0f)
+			{
+				cout << rad.photon.power << endl;
+				irridance = irridance + diffuse * angle * rad.photon.power;
+			}
+		}
+
+		irridance = (irridance * inv) / N;
+
+		return irridance;
 	}
 
 	return localColor;
@@ -229,7 +315,7 @@ Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df ligh
 
 bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest)
 {
-	Intersection intersection = tree->trace(origin, dest - origin, MyMesh.triangles, MyMesh.vertices);
+	Intersection intersection = tree->trace(origin, dest - origin, MyMesh.triangles, MyMesh.vertices, -1);
 	if (intersection.hit())
 	{
 		float distanceToLight = Vec3Df::distance(origin, dest);
@@ -248,6 +334,22 @@ void yourDebugDraw()
 {
 	// Draw the mesh.
 	MyMesh.draw();
+
+	// Draw the hasdfmklasdmklf you want
+	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
+	glDisable(GL_LIGHTING);
+	glPointSize(1);
+	glBegin(GL_POINTS);
+	for (int i = 0; i < testDots.size(); ++i) {
+		Vec3Df testColor = testColors[i];
+		Vec3Df position = testDots[i];
+
+		glColor3f(testColor[0], testColor[1], testColor[2]);
+		glVertex3fv(position.pointer());
+	}
+	glEnd();
+	glPopAttrib();									// (Restore all GL attributes.)
+
 
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
@@ -358,6 +460,17 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	if (t == 'n') {
 		draw = true;
 		draw = false;
+	}
+
+	if (t == 'g')
+	{
+		emitPhotons();
+	}
+
+	if (t == 'p')
+	{
+		PointLight* light = new PointLight(MyCameraPosition, Vec3Df(1, 1, 1));
+		lights.push_back(light);
 	}
 
 

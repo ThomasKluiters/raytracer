@@ -34,10 +34,11 @@ void yourDebugDraw();
 //want keyboard interaction? Here it is...
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination);
 
+void emitPhotons();
 bool lightobstructed(const Vec3Df & origin, const Vec3Df & dest);
 void clearAllLines();
 void drawLine(Vec3Df origin, Vec3Df dest, Vec3Df color);
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material);
-Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int material);
+Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light & l, int material);
 
 #endif

@@ -25,7 +25,7 @@ public:
 
 	Light(Vec3Df pos, Vec3Df pow) : position(pos), power(pow) {}
 
-	virtual void emit(int count, vector<LightRay> ray) = 0;
+	virtual LightRay emit() = 0;
 
 	Vec3Df position;
 	Vec3Df power;
@@ -33,7 +33,8 @@ public:
 
 };
 
-class PointLight : Light
+
+class PointLight : public Light
 {
 
 private:
@@ -54,33 +55,30 @@ public:
 		distribution = uniform_real_distribution<float>(-1.0f, 1.0f);
 	}
 
-	void emit(int samples, vector<LightRay> rays)
+	LightRay emit()
 	{
-		for (int i = 0; i < samples; i++)
+		float x, y, z;
+
+		do
 		{
-			float x, y, z;
+			x = distribution(engine);
+			y = distribution(engine);
+			z = distribution(engine);
+		} while (x * x + y * y + z * z > 1.0f);
 
-			do
-			{
-				x = distribution(engine);
-				y = distribution(engine);
-				z = distribution(engine);
-			} while (x * x + y * y + z * z > 1.0f);
+		Vec3Df direction(x, y, z);
+		direction.normalize();
 
-			Vec3Df direction(x, y, z);
-			direction.normalize();
-
-			rays.push_back({
-				position,
-				direction,
-				power
-			});
-		}
+		return LightRay{
+			position,
+			direction,
+			power
+		};
 	}
 
 };
 
-class SquareLight : Light
+class SquareLight : public Light
 {
 
 private:
@@ -108,7 +106,7 @@ public:
 		nDistrubution = uniform_real_distribution<float>(0, 1.0f);
 	}
 
-	void emit()
+	LightRay emit()
 	{
 		float xOffset = pDistribution(engine);
 

@@ -96,23 +96,26 @@ struct KDTree
 		return left == NULL && right == NULL;
 	}
 
-	Intersection trace(const Vec3Df & origin, const Vec3Df & direction, vector<Triangle> & triangles, vector<Vertex> & vertices)
+	Intersection trace(const Vec3Df & origin, const Vec3Df & direction, vector<Triangle> & triangles, vector<Vertex> & vertices, int exclusion)
 	{
 		Intersection intersection;
 		intersection.origin = origin;
 		intersection.distance = FLT_MAX;
 		
-		trace(origin, direction, intersection, triangles, vertices);
+		trace(origin, direction, intersection, triangles, vertices, exclusion);
 		
 		return intersection;
 	}
 
-	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices)
+	void trace(const Vec3Df & origin, const Vec3Df & direction, Intersection & intersection, vector<Triangle> & triangles, vector<Vertex> & vertices, int exclusion)
 	{
 		if (isLeaf())
 		{
 			for (auto index : indices)
 			{
+				if (index == exclusion)
+					continue;
+
 				Triangle & triangle = triangles[index];
 
 				Vec3Df & v0 = vertices[triangle.v[0]].p;
@@ -152,7 +155,8 @@ struct KDTree
 					intersection.distance = t;
 					intersection.position = v0 + u * e1 + v * e2;
 					intersection.triangle = index;
-					intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
+					intersection.normal = Vec3Df::crossProduct(e1, e2);
+					intersection.normal.normalize();
 				}
 			}
 		}
@@ -160,11 +164,11 @@ struct KDTree
 		{
 			if (left != NULL && left->voxel.intersects(origin, direction))
 			{
-				left->trace(origin, direction, intersection, triangles, vertices);
+				left->trace(origin, direction, intersection, triangles, vertices, exclusion);
 			}
 			if (right != NULL && right->voxel.intersects(origin, direction))
 			{
-				right->trace(origin, direction, intersection, triangles, vertices);
+				right->trace(origin, direction, intersection, triangles, vertices, exclusion);
 			}
 		}
 	}

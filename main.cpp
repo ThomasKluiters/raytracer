@@ -334,6 +334,7 @@ void keyboard(unsigned char key, int x, int y)
             // Click 'r'.
         case 'r':
         {
+			emitPhotons();
             // Pressing r will launch the raytracing.
             cout << "Raytracing" << endl;
             
