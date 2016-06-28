@@ -60,6 +60,8 @@ unsigned int endY = 0;
 #define NUM_BLOCKS_Y 1              // Number of blocks in y direction
 
 
+
+
 /**
  * Drawing function, which draws an image (frame) on the screen.
  */
@@ -138,6 +140,10 @@ int main(int argc, char** argv)
     glutMotionFunc(tbMotionFunc);  // uses mouse
     glutIdleFunc(animate);
     
+    const string serverIP = argv[1];
+    const unsigned short serverPort = atoi(argv[2]);
+    
+    connection = new TCPSocket(serverIP, serverPort);
     
     // Receive info from server
     vector<int> bounds = Communication::receiveInitMessage();
@@ -363,6 +369,48 @@ void keyboard(unsigned char key, int x, int y)
             MyLightPositions[MyLightPositions.size() - 1] = getCameraPosition();
             break;
             
+        case 'o':
+            
+            
+            produceRay(0, 0, &origin00, &dest00);
+            produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
+            produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
+            produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
+            
+            
+            cout
+            << "origin00[0] = " << origin00[0] << "; \n"
+            << "origin00[1] = " << origin00[1] << "; \n"
+            << "origin00[2] = " << origin00[2] << "; \n"
+            << "origin01[0] = " << origin01[0] << "; \n"
+            << "origin01[1] = " << origin01[1] << "; \n"
+            << "origin01[2] = " << origin01[2] << "; \n"
+            << "origin10[0] = " << origin10[0] << "; \n"
+            << "origin10[1] = " << origin10[1] << "; \n"
+            << "origin10[2] = " << origin10[2] << "; \n"
+            << "origin11[0] = " << origin11[0] << "; \n"
+            << "origin11[1] = " << origin11[1] << "; \n"
+            << "origin11[2] = " << origin11[2] << "; \n\n"
+            << endl;
+            
+            cout
+            << "dest00[0] = " << dest00[0] << "; \n"
+            << "dest00[1] = " << dest00[1] << "; \n"
+            << "dest00[2] = " << dest00[2] << "; \n"
+            << "dest01[0] = " << dest01[0] << "; \n"
+            << "dest01[1] = " << dest01[1] << "; \n"
+            << "dest01[2] = " << dest01[2] << "; \n"
+            << "dest10[0] = " << dest10[0] << "; \n"
+            << "dest10[1] = " << dest10[1] << "; \n"
+            << "dest10[2] = " << dest10[2] << "; \n"
+            << "dest11[0] = " << dest11[0] << "; \n"
+            << "dest11[1] = " << dest11[1] << "; \n"
+            << "dest11[2] = " << dest11[2] << "; \n"
+            << endl;
+            
+            
+            break;
+            
             // Click 'r'.
         case 'r':
         {
@@ -371,19 +419,6 @@ void keyboard(unsigned char key, int x, int y)
             
             // Setup an image with the size of the current image.
             Image result(WindowSize_X, WindowSize_Y);
-            
-            // Produce the rays for each pixel, by first computing the rays for the corners of the frustum.
-            Vec3Df origin00, dest00;
-            Vec3Df origin01, dest01;
-            Vec3Df origin10, dest10;
-            Vec3Df origin11, dest11;
-            
-            produceRay(0, 0, &origin00, &dest00);
-            produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
-            produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
-            produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
-            
-            
             
             // Vector to store threads
             std::vector<std::thread> precomputeThreads;

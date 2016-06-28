@@ -10,10 +10,16 @@
 using namespace std;
 
 
+Vec3Df origin00, dest00;
+Vec3Df origin01, dest01;
+Vec3Df origin10, dest10;
+Vec3Df origin11, dest11;
 
-TCPSocket connection("127.0.0.1", 2003);
+TCPSocket *connection;
 
-const int RCVBUFSIZE = 30;    // Size of receive buffer
+//TCPSocket connection("127.0.0.1", 2003);
+
+const int RCVBUFSIZE = 40;    // Size of receive buffer
 
 class Communication {
     
@@ -24,18 +30,45 @@ public:
         try {
             char echoBuffer[RCVBUFSIZE + 1];    // Buffer for echo string + \0
             int recvMsgSize;
-            
+
             // Receive the same string back from the server
             cout << "Received: ";               // Setup to print the echoed string
-            if ((recvMsgSize = connection.recv(echoBuffer, RCVBUFSIZE)) > 0) {
+            while ((recvMsgSize = connection->recv(echoBuffer, RCVBUFSIZE)) > 0) {
                 
                 std::string s = (string) echoBuffer;
                 
-                std::vector<int> result = explode(s, '_');
+                std::vector<float> result = explodeFloat(s, '_');
                 
-                cout << result[0] << endl;
+                if (result[0] == -000) {
+                    origin00 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -001) {
+                    origin01 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -10) {
+                    origin10 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -11) {
+                    origin11 = Vec3Df(result[1], result[2], result[3]);
+                }
                 
-                return explode(s, '_');
+                else if (result[0] == -100) {
+                    dest00 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -101) {
+                    dest01 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -110) {
+                    dest10 = Vec3Df(result[1], result[2], result[3]);
+                }
+                else if (result[0] == -111) {
+                    dest11 = Vec3Df(result[1], result[2], result[3]);
+                }
+                
+                else {
+                    return explode(s, '_');
+                }
+                
             }
             cout << endl;
             
@@ -65,7 +98,7 @@ public:
             
                 sprintf(message, "%d_%f", i, rgbValue);
                  
-                connection.send(message, 20);
+                connection->send(message, 20);
                 
             }
             
@@ -73,7 +106,7 @@ public:
             
         }
         
-        connection.send((const char*) &"/", 1);
+        connection->send((const char*) &"/", 1);
         
     }
 
@@ -86,6 +119,19 @@ private:
         for (std::string token; std::getline(iss, token, delim); )
         {
             result.push_back(std::move(stoi(token)));
+        }
+        
+        return result;
+    }
+                    
+    static std::vector<float> explodeFloat(std::string const & s, char delim)
+    {
+        std::vector<float> result;
+        std::istringstream iss(s);
+        
+        for (std::string token; std::getline(iss, token, delim); )
+        {
+            result.push_back(std::move(stof(token)));
         }
         
         return result;

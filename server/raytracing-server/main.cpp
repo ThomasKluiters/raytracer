@@ -22,6 +22,7 @@
 #include <cstdlib>            // For atoi()
 #include "ImageWriter.h"
 #include <pthread.h>          // For POSIX threads
+#include <vector>
 
 
 #define NUM_CLIENTS 2
@@ -29,6 +30,19 @@
 #define NUM_BLOCKS_Y 2
 #define WIDTH 200
 #define HEIGHT 200
+
+
+std::vector<float> origin00(3);
+std::vector<float> origin01(3);
+std::vector<float> origin10(3);
+std::vector<float> origin11(3);
+
+
+std::vector<float> dest00(3);
+std::vector<float> dest01(3);
+std::vector<float> dest10(3);
+std::vector<float> dest11(3);
+
 
 int currentClients = 0;
 
@@ -40,6 +54,35 @@ void HandleTCPClient(TCPSocket *sock);     // TCP client handling function
 void *ThreadMain(void *arg);               // Main program of a thread
 
 int main(int argc, char *argv[]) {
+    
+    origin00[0] = -0.00466308;
+    origin00[1] = 0.00466308;
+    origin00[2] = 3.99;
+    origin01[0] = -0.00466308;
+    origin01[1] = -0.00461645;
+    origin01[2] = 3.99;
+    origin10[0] = 0.00461645;
+    origin10[1] = 0.00466308;
+    origin10[2] = 3.99;
+    origin11[0] = 0.00461645;
+    origin11[1] = -0.00461645;
+    origin11[2] = 3.99;
+
+
+    dest00[0] = -4.66308;
+    dest00[1] = 4.66308;
+    dest00[2] = -6.00001;
+    dest01[0] = -4.66308;
+    dest01[1] = -4.61645;
+    dest01[2] = -6.00001;
+    dest10[0] = 4.61645;
+    dest10[1] = 4.66308;
+    dest10[2] = -6.00001;
+    dest11[0] = 4.61645;
+    dest11[1] = -4.61645;
+    dest11[2] = -6.00001;
+    
+    
     if (argc != 2) {                 // Test for correct number of arguments
         cerr << "Usage: " << argv[0] << " <Server Port> " << endl;
         exit(1);
@@ -98,6 +141,32 @@ void HandleTCPClient(TCPSocket *sock) {
         return;
     }
     
+    
+    int messageLength = 40;
+    char message [messageLength];
+    
+    
+    // Send origin and destination
+    sprintf(message, "-000_%f_%f_%f", origin00[0], origin00[1], origin00[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-001_%f_%f_%f", origin01[0], origin01[1], origin01[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-010_%f_%f_%f", origin10[0], origin10[1], origin10[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-011_%f_%f_%f", origin11[0], origin11[1], origin11[2]);
+    sock->send(message, messageLength);
+    
+    sprintf(message, "-100_%f_%f_%f", dest00[0], dest00[1], dest00[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-101_%f_%f_%f", dest01[0], dest01[1], dest01[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-110_%f_%f_%f", dest10[0], dest10[1], dest10[2]);
+    sock->send(message, messageLength);
+    sprintf(message, "-111_%f_%f_%f", dest11[0], dest11[1], dest11[2]);
+    sock->send(message, messageLength);
+    
+    
+    
     // Block size
     unsigned int numberOfXPixelsInBlock = ceil(WIDTH / NUM_BLOCKS_X);
     unsigned int numberOfYPixelsInBlock = ceil(HEIGHT / NUM_BLOCKS_Y);
@@ -114,12 +183,10 @@ void HandleTCPClient(TCPSocket *sock) {
     cout << "Client number: " << currentClients << " << start x: " << startX << " start y: " << startY << endl;
     
     // Send block and image size
-    int messageLength = 30;
-    char message [messageLength];
-        
     sprintf(message, "%i_%i_%i_%i_%i_%i", WIDTH, HEIGHT, startX, startY, endX, endY);
     
     sock->send(message, messageLength);
+    
     
     
     // Send received string and receive again until the end of transmission

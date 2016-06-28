@@ -203,7 +203,7 @@ public:
    *   @exception SocketException thrown if unable to create TCP socket
    */
   TCPSocket(const string &foreignAddress, unsigned short foreignPort) 
-      throw(SocketException);
+    throw(SocketException);
 
 private:
   // Access for TCPServerSocket::accept() connection creation

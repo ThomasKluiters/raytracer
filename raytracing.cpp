@@ -316,7 +316,9 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		draw = true;
 
 		lichtbak(rayOrigin, rayDestination);
-
+        
+        cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
+        
 		draw = false;
 	}
 
