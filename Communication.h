@@ -92,19 +92,16 @@ public:
 
 		cout << "Image Data Sending: Yo, some image data incoming, right about.... now." << endl;
 
-		for (unsigned int i = 0; i < sensor.imageData.size() * 3; ++i)
+		for (unsigned int i = 0; i < sensor.imageData.size() * sensor.imageData[0].size() * 3; ++i)
 		{
-			rgbValue = (sensor.imageData[(i / 3) % sensor.imageData.size()][(i / 3) / sensor.imageData.size()][i % 3]);
+			rgbValue = sensor.imageData[(i / 3) % sensor.imageData.size()][(i / 3) / sensor.imageData.size()][i % 3];
 
 			// Only send value when necessary
 			if (rgbValue > 0.0f)
 			{
-				snprintf(message, messageLength, "%d_%f", i, rgbValue);
-
+				snprintf(message, messageLength, "%d_%f", i, rgbValue * 255.0f);
 				connection->send(message, 20);
 			}
-
-			//            cout << i/(float)image._image.size() << endl;
 		}
 
 		connection->send((const char*) &"/", 1);
