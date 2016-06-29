@@ -102,7 +102,7 @@ public:
 	bool writeImage(const char * filename);
 };
 
-bool Image::writeImage(const char * filename)
+inline bool Image::writeImage(const char * filename)
 {
 	FILE* file;
 #pragma warning (disable : 4996)

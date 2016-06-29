@@ -27,16 +27,40 @@
     <ClInclude Include="Vec3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="imageWriter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="matrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KDTree.h">
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LensElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lens.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FilmPlane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AreaLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpotLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Communication.h">
@@ -56,11 +80,38 @@
     <ClCompile Include="raytracing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Communication.cpp">
+    <ClCompile Include="LensElement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PracticalSocket.cpp">
+    <ClCompile Include="Lens.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FilmPlane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AreaLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SpotLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Communication.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PracticalSocket.cpp">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

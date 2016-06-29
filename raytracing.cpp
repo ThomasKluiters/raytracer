@@ -15,6 +15,7 @@
 #include "raytracing.h"
 #include "KDTree.h"
 
+
 // Temporary variables. (These are only used to illustrate a simple debug drawing.) 
 Vec3Df testRayOrigin;
 Vec3Df testRayDestination;
@@ -22,6 +23,9 @@ Vec3Df testRayDestination;
 std::vector<Vec3Df> testArraystart;
 std::vector<Vec3Df> testArrayfinish;
 std::vector<Vec3Df> testArraycolor;
+
+Camera * myCamera;
+DebugScreen * myDebugScreen;
 
 int maxDepth;
 bool draw;
@@ -35,8 +39,10 @@ KDTree* tree;
 /**
 * Use this function for any preprocessing of the mesh.
 */
-void init()
+void init(Camera * camera, DebugScreen * debugScreen)
 {
+	myDebugScreen = debugScreen;
+	myCamera = camera;
 	//load the mesh file
 	//please realize that not all OBJ files will successfully load.
 	//Nonetheless, if they come from Blender, they should, if they 
@@ -45,8 +51,22 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("test.obj", true);
+	MyMesh.loadMesh(myDebugScreen->sceneData.data(), true);
 	MyMesh.computeVertexNormals();
+	GLfloat mat_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat mat_shininess[] = { 10.0 };
+	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glShadeModel(GL_SMOOTH);
+	
+	glLightf(GL_LIGHT0, GL_DIFFUSE, *mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+
 	cout << "Loaded Mesh successfully" << endl;
 
 	//one first move: initialize the first light source
@@ -81,11 +101,10 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 	Vec3Df normal = intersection.normal;
 	Vec3Df location = intersection.position;
-	Vec3Df localColor = MyMesh.materials[material].Ka();
-
+	Vec3Df localColor = MyMesh.materials[material].Kd();
 
 	for (auto light : lights)
-	{
+	{	
 		localColor = localColor + softshading(location, normal, origin, light, material);
 	}
 
@@ -213,7 +232,6 @@ Vec3Df softshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Light l, int m
 	return 1.0f / lights.size() * temp;
 }
 
-
 Vec3Df lambertshading(Vec3Df location, Vec3Df normal, Vec3Df origin, Vec3Df light, int material) {
 	Vec3Df light_in = light - location;
 	light_in.normalize();
@@ -272,10 +290,16 @@ void yourDebugDraw()
 	// Draw the mesh.
 	MyMesh.draw();
 
+	// Update cameraposition
+	myCamera->transformCamera(MyCameraPosition);	
+	myDebugScreen->drawPlane(Vec3Df(0.0, 0.0, 0.0), 12.0, 12.0);
+	myDebugScreen->drawDebugInfo();
+	myDebugScreen->indicateOrigin();
+
 	// Draw the lights in the scene as points.
 	glPushAttrib(GL_ALL_ATTRIB_BITS);				// (Store all GL attributes.)
 	glDisable(GL_LIGHTING);
-	glColor3f(1, 1, 1);
+	glColor3f(1, 1, 0.6);
 	glPointSize(10);
 	glBegin(GL_POINTS);
 	for (int i = 0; i<MyLightPositions.size(); ++i)
@@ -299,6 +323,9 @@ void yourDebugDraw()
 													glEnd();
 													glPopAttrib();
 													*/
+
+
+
 	for (int i = 0; i < testArrayfinish.size(); ++i) {
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glDisable(GL_LIGHTING);
@@ -308,12 +335,11 @@ void yourDebugDraw()
 		glBegin(GL_LINES);
 		glVertex3f(testArraystart[i][0], testArraystart[i][1], testArraystart[i][2]);
 		glVertex3f(testArrayfinish[i][0], testArrayfinish[i][1], testArrayfinish[i][2]);
-		//glVertex3f(source[0], source[1], source[2]);
-		//glVertex3f(dest[0],dest[1],dest[2]);
 		glEnd();
-		glPopAttrib();
+		glPopAttrib();			
 	}
 
+	glEnable(GL_LIGHTING);
 	// Draw whatever else you want...
 	////glutSolidSphere(1,10,10);
 	////allows you to draw a sphere at the origin.
@@ -382,6 +408,10 @@ void lichtbak(Vec3Df origin, Vec3Df dest) {
 */
 void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3Df & rayDestination)
 {
+	if (rendering) {
+		return;
+	}
+
 	//here, as an example, I use the ray to fill in the values for my upper global ray variable
 	//I use these variables in the debugDraw function to draw the corresponding ray.
 	//try it: Press a key, move the camera, see the ray that was launched as a line.
@@ -394,29 +424,33 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	if (t == 't') {
 		clearAllLines();
 		draw = true;
-		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination - testRayOrigin, 1);
-		//drawLine(testRayOrigin, testRayDestination, z);
+		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination - testRayOrigin, 4);
+		drawLine(testRayOrigin, testRayDestination, Vec3Df(1.0, 1.0, 0.0));
 		std::cout << " traced ray for" << rayOrigin << "," << rayDestination << "," << z << std::endl;
 		draw = false;
 	}
 
 	if (t == 'c') {
-		clearAllLines();
+		myCamera->lookAt(rayDestination);
 		std::cout << MyCameraPosition << std::endl;
+	}
+
+	if (t == 'C') {
+		clearAllLines();
+		draw = true;
+		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0, 0.6, 0.0));
+		draw = false;
 	}
 
 	if (t == 'n') {
 		draw = true;
-
 		lichtbak(rayOrigin, rayDestination);
-        
         cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
-        
 		draw = false;
 	}
 
-
 	if (t == 'z') {
+		clearAllLines();
 		draw = true;
 		for (int i = 0; i < MyMesh.vertices.size(); ++i) {
 			draw = true;

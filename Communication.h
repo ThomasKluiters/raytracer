@@ -1,4 +1,6 @@
+#pragma once
 #include "PracticalSocket.h"  // For Socket and SocketException
+#include "FilmPlane.h"
 #include <iostream>           // For cerr and cout
 #include <cstdlib>            // For atoi()
 #include <string>
@@ -80,39 +82,65 @@ public:
         
         return std::vector<int>();
     }
-    
-    
-    static void sendImage(Image image) {
-        
-        const int messageLength = 20;
-        
-        float rgbValue;
-        char message [messageLength];
-        
+
+	static void sendImage(FilmPlane sensor)
+	{
+		const int messageLength = 20;
+
+		float rgbValue;
+		char message [messageLength];
+
 		cout << "Image Data Sending: Yo, some image data incoming, right about.... now." << endl;
 
-        for (unsigned int i = 0; i < image._image.size(); ++i) {
-            
-            rgbValue =  (image._image[i] * 255.0f);
-            
-            // Only send value when necessary
-            if (rgbValue > 0.0f) {
-            
-                sprintf(message, "%d_%f", i, rgbValue);
-                 
-                connection->send(message, 20);
-                
-            }
-            
-//            cout << i/(float)image._image.size() << endl;
-            
-        }
-        
-        connection->send((const char*) &"/", 1);
-		
+		for (unsigned int i = 0; i < sensor.imageData.size() * sensor.imageData[0].size() * 3; ++i)
+		{
+			rgbValue = sensor.imageData[(i / 3) % sensor.imageData.size()][(i / 3) / sensor.imageData.size()][i % 3];
+
+			// Only send value when necessary
+			if (rgbValue > 0.0f)
+			{
+				snprintf(message, messageLength, "%d_%f", i, rgbValue * 255.0f);
+				connection->send(message, 20);
+			}
+		}
+
+		connection->send((const char*) &"/", 1);
+
 		cout << "Image Data Sent: That's all image data (for now)." << endl;
-        
-    }
+	        
+	    }
+    
+//    static void sendImage(Image image) {
+//        
+//        const int messageLength = 20;
+//        
+//        float rgbValue;
+//        char message [messageLength];
+//        
+//		cout << "Image Data Sending: Yo, some image data incoming, right about.... now." << endl;
+//
+//        for (unsigned int i = 0; i < image._image.size(); ++i) {
+//            
+//            rgbValue =  (image._image[i] * 255.0f);
+//            
+//            // Only send value when necessary
+//            if (rgbValue > 0.0f) {
+//            
+//                sprintf(message, "%d_%f", i, rgbValue);
+//                 
+//                connection->send(message, 20);
+//                
+//            }
+//            
+////            cout << i/(float)image._image.size() << endl;
+//            
+//        }
+//        
+//        connection->send((const char*) &"/", 1);
+//		
+//		cout << "Image Data Sent: That's all image data (for now)." << endl;
+//        
+//    }
 
 private:
     static std::vector<int> explode(std::string const & s, char delim)
