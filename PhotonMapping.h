@@ -6,7 +6,7 @@
 #include <queue>
 #include <functional>
 
-const int N = 50;
+const int N = 500;
 
 #define SHADOW 0
 #define DIFFUSE 1
@@ -23,6 +23,27 @@ struct Photon {
 	int type;
 
 };
+
+struct Split
+{
+	float position;
+
+	int dimension;
+
+	float cost;
+
+	int left;
+
+	int right;
+
+	int side;
+
+	int photon;
+
+	Vec3Df vector;
+};
+
+
 
 struct Radiance {
 
@@ -78,7 +99,14 @@ public:
 	PhotonMap * left;
 	PhotonMap * right;
 
-	PhotonMap(Box box) : box(box) {}
+	Split split;
+
+	void setSplit(Split & splt) {
+		Split a = splt;
+		split = a;
+	}
+
+	PhotonMap(Box box, Split split) : box(box), split(split) {}
 
 	PhotonMap(vector<Photon> photons, Box box) : box(box), photons(photons) {}
 
@@ -87,82 +115,42 @@ public:
 		return left == NULL && right == NULL;
 	}
 
+
 	void locatePhotons(Vec3Df position, vector<Radiance> & heap)
 	{
-		if (leaf())
-		{
-			for (auto photon : photons)
-			{
-				float distance = Vec3Df::distance(photon.position, position);
-				float radius = distance * distance;
+			float dot = Vec3Df::dotProduct(position, split.vector);
+			float dist = dot * dot;
 
-				if (heap.size() < N)
+			
+			float dx = position[split.dimension] - split.position;
+
+			if (leaf() && (heap.size() < N || dist <= heap.front().distance)) {
+
+				for (auto & photon : photons)
 				{
+					float distance = Vec3Df::dotProduct(position, photon.position);
+					distance = distance * distance;
 					heap.push_back({
 						photon,
-						radius
+						distance
 					});
 					push_heap(heap.begin(), heap.end());
-				}
-				else
-				{
-					Radiance & top = heap.front();
-					if (top.distance > radius)
-					{
+
+;					if (heap.size() > N) {
 						pop_heap(heap.begin(), heap.end());
 						heap.pop_back();
-
-						heap.push_back({
-							photon,
-							radius
-						});
-
-						push_heap(heap.begin(), heap.end());
 					}
 				}
 			}
-		}
-		else
-		{
+			
+			PhotonMap* nearMap = dx <= 0 ? left : right;
+			PhotonMap* farMap = dx <= 0 ? right : left;
 
-			float leftDistance = left->box.distance(position);
-			float rightDistance = right->box.distance(position);
-
-			if (rightDistance > leftDistance)
-			{
-				left->locatePhotons(position, heap);
-
-				if (heap.size() > 0)
-				{
-					float max = heap.front().distance;
-
-					if (rightDistance > max)
-					{
-						return;
-					}
-				}
-
-				right->locatePhotons(position, heap);
-
+			if(nearMap) nearMap->locatePhotons(position, heap);
+			if (heap.size() > 0 && (dx * dx) >= heap.front().distance) {
+				return;
 			}
-			else
-			{
-				right->locatePhotons(position, heap);
-
-				if (heap.size() > 0)
-				{
-					float max = heap.front().distance;
-
-					if (leftDistance > max)
-					{
-						return;
-					}
-				}
-
-				left->locatePhotons(position, heap);
-			}
-
-		}
+			if(farMap) farMap->locatePhotons(position, heap);
 	}
 
 };
@@ -179,23 +167,6 @@ public:
 	{
 		photons.push_back(photon);
 	}
-
-	struct Split
-	{
-		float position;
-
-		int dimension;
-
-		float cost;
-
-		int left;
-
-		int right;
-
-		int side;
-
-		int photon;
-	};
 
 	struct Event
 	{
@@ -290,8 +261,8 @@ public:
 			Event & event = events[eventIndex];
 
 			const float position = event.position;
-			const int dimension = event.dimension;
-			const int photon = event.photon;
+			int dimension = event.dimension;
+			int photon = event.photon;
 
 			pair<float, int> sah = SAH(box, position, dimension, left[dimension], right[dimension]);
 			float cost = sah.first;
@@ -301,6 +272,8 @@ public:
 			{
 				best = cost;
 
+				Vec3Df vector = photons[event.photon].position;
+
 				split = {
 					position,
 					dimension,
@@ -308,7 +281,8 @@ public:
 					left[dimension],
 					right[dimension],
 					side,
-					photon
+					photon,
+					vector
 				};
 			}
 
@@ -387,9 +361,13 @@ public:
 		}
 
 		PhotonMap* leftMap = construct(left, leftBox);
+		if(leftMap->leaf())
+			leftMap->setSplit(split);
 		PhotonMap* rightMap = construct(right, rightBox);
+		if(rightMap->leaf())
+			rightMap->setSplit(split);
 
-		PhotonMap* root = new PhotonMap(box);
+		PhotonMap* root = new PhotonMap(box, split);
 		root->left = leftMap;
 		root->right = rightMap;
 

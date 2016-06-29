@@ -29,7 +29,7 @@ std::vector<Vec3Df> testDots;
 std::vector<Vec3Df> testColors;
 
 int maxDepth;
-int photons = 1000;
+int photons = 300000;
 bool draw;
 
 std::vector<Light*> lights;
@@ -54,7 +54,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("dodgeColorTest.obj", true);
+	MyMesh.loadMesh("C:/Users/Thomas/Downloads/LatestScene/test2.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -115,7 +115,7 @@ void tracePhoton(LightRay ray, PhotonMapBuilder & builder, bool caustic, bool so
 					builder.add({
 						shadow.position,
 						power,
-						incident,
+						ray.direction,
 						SHADOW
 					});
 				}
@@ -252,7 +252,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 			}
 		}
 
-		irridance = irridance / N;
+		irridance = irridance / (diffuseCount + shadowCount);
 
 		localColor = diffuse * irridance;
 
@@ -260,7 +260,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 		float Tr = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Tr();
 		
-		if (MyMesh.materials[material].has_Ni() && depth < maxDepth && Tr < 0.99) {
+		if (false && MyMesh.materials[material].has_Ni() && depth < maxDepth && Tr < 0.99) {
 
 			Vec3Df in = location - origin;
 			Vec3Df inv_in = -1.0f * in;
