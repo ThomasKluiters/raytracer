@@ -29,7 +29,7 @@ std::vector<Vec3Df> testDots;
 std::vector<Vec3Df> testColors;
 
 int maxDepth;
-int photons = 20000;
+int photons = 1000;
 bool draw;
 
 std::vector<Light*> lights;
@@ -54,14 +54,14 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("dodgeColorTest.obj", true);
+	MyMesh.loadMesh("test2.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
 	//at least ONE light source has to be in the scene!!!
 	//here, we set it to the current location of the camera
 	MyLightPositions.push_back(MyCameraPosition);
-	maxDepth = 4;
+	maxDepth = 6;
 	draw = false;
 
 	KDTreeBuilder kd(MyMesh);
@@ -214,26 +214,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 	Vec3Df location = intersection.position;
 	Vec3Df localColor = MyMesh.materials[material].Ka();
 
-	if (depth < 6 && false) {
-		Vec3Df N = intersection.normal;
-		N.normalize();
-
-		Vec3Df R = -1.0f * direction;
-		R.normalize();
-
-		Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
-
-		drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
-		drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
-		drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
-
-		return localColor * 0.5f + 0.5f * performRayTracing(location, reflection, depth + 1);
-
-		//return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
-
-
-	}
-
 	vector<Radiance> radiance;
 
 	globalMap->locatePhotons(location, radiance);
@@ -250,7 +230,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		Vec3Df irridance = Vec3Df(0, 0, 0);
 
 		Vec3Df diffuse = MyMesh.materials[material].Kd();
-		
+
 		int diffuseCount = 0;
 		int shadowCount = 0;
 
@@ -273,6 +253,26 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		}
 
 		irridance = irridance / N;
+
+		float Tr = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Tr();
+
+		if (depth < maxDepth) {
+			Vec3Df N = intersection.normal;
+			N.normalize();
+
+			Vec3Df R = -1.0f * direction;
+			R.normalize();
+
+			Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+
+			drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
+			drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
+			drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
+
+			return irridance * diffuse * 0.7f + 0.3f * performRayTracing(location, reflection, depth + 1);
+
+			//return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
+		}
 
 		return irridance * diffuse;
 	}
@@ -470,7 +470,7 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 
 	if (t == 'p')
 	{
-		PointLight* light = new PointLight(MyCameraPosition, Vec3Df(1, 1, 1));
+		PointLight* light = new PointLight(MyCameraPosition, Vec3Df(1.5, 1.5, 1.5));
 		lights.push_back(light);
 	}
 
