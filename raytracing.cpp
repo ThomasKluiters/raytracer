@@ -54,7 +54,7 @@ void init()
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh("test2.obj", true);
+	MyMesh.loadMesh("dodgeColorTest.obj", true);
 	MyMesh.computeVertexNormals();
 
 	//one first move: initialize the first light source
@@ -254,27 +254,67 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 		irridance = irridance / N;
 
+		localColor = diffuse * irridance;
+
+		Vec3Df inv_normal = -1.0f * normal;
+
 		float Tr = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Tr();
+		
+		if (MyMesh.materials[material].has_Ni() && depth < maxDepth && Tr < 0.99) {
 
-		if (depth < maxDepth) {
-			Vec3Df N = intersection.normal;
-			N.normalize();
+			Vec3Df in = location - origin;
+			Vec3Df inv_in = -1.0f * in;
+			in.normalize();
+			inv_in.normalize();
 
-			Vec3Df R = -1.0f * direction;
-			R.normalize();
+			float R, T;
+			float Ni = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ni();
+			float debug = Vec3Df::dotProduct(inv_in, normal);
+			if (debug < 0) {
+				Ni = 1.0f / Ni;
+				inv_normal = -1 * inv_normal;
+				normal = -1 * normal;
+			}
 
-			Vec3Df reflection = -R + 2 * Vec3Df::dotProduct(R, N) * N;
+			float c = Vec3Df::dotProduct(inv_normal, in);
+			float temp = (1 - (Ni * Ni) * (1 - (c*c)));
 
-			drawLine(intersection.position, intersection.position + reflection, Vec3Df(1, 1, 0));
-			drawLine(intersection.position, intersection.position + N, Vec3Df(0, 1, 1));
-			drawLine(intersection.position, intersection.position + R, Vec3Df(0, 1, 1));
+			Vec3Df reflection;
+			Vec3Df refraction;
 
-			return irridance * diffuse * 0.7f + 0.3f * performRayTracing(location, reflection, depth + 1);
 
-			//return (Tr)* localColor + Tr * T * performRayTracing(location, out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
+			Vec3Df out_reflection = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
+			drawLine(location, location + out_reflection, Vec3Df(0, 1, 1));
+			Vec3Df out_refraction;
+			if (temp > 0) {
+				out_refraction = Ni * in + (Ni * c - sqrt(temp))* inv_normal;
+				out_refraction.normalize();
+
+
+				float cos_in = Vec3Df::dotProduct(inv_in, normal);
+				float cos_out = Vec3Df::dotProduct(out_refraction, inv_normal);
+
+				float Rs = pow((Ni * cos_in - cos_out) / (Ni * cos_in + cos_out), 2);
+				float Rp = pow((Ni * cos_out - cos_in) / (Ni * cos_out + cos_in), 2);
+
+				R = 0.5 * (Rs + Rp);
+				T = 1 - R;
+
+			}
+			else {
+				R = 1;
+				T = 0;
+			}
+			//drawLine(location, 2 * (location - out_reflection), Vec3Df(0, 1, 1));
+			drawLine(origin, location, Vec3Df(1, 1, 0));
+			if (R < 0.000001) { R = 0; return Tr * localColor + (1.0f - Tr) * T * performRayTracing(location, out_refraction, depth + 1); }
+			if (T < 0.000001) { T = 0; return Tr * localColor + (1.0f - Tr) * R * performRayTracing(location, out_reflection, depth + 1); }
+
+
+			return (Tr)* localColor + (1.0f - Tr) * T * performRayTracing(location, out_refraction, depth + 1) + (1.0f - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
+
+
 		}
-
-		return irridance * diffuse;
 	}
 
 	return localColor;
