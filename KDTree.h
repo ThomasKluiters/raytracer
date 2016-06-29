@@ -150,14 +150,25 @@ struct KDTree
                     continue;
                 
                 float t = Vec3Df::dotProduct(e2, Q) * inverse;
+				
+
                 
                 if (t > 0.0001 && t < intersection.distance)
                 {
                     intersection.distance = t;
                     intersection.position = v0 + u * e1 + v * e2;
                     intersection.triangle = index;
-					intersection.normal = Vec3Df::crossProduct(e1, e2);//(1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;
-                }
+
+					if (Vec3Df::dotProduct(vertices[triangle.v[0]].n, vertices[triangle.v[1]].n) < 0.86 || Vec3Df::dotProduct(vertices[triangle.v[0]].n, vertices[triangle.v[2]].n) < 0.86 || Vec3Df::dotProduct(vertices[triangle.v[2]].n, vertices[triangle.v[1]].n) < 0.86) {
+						intersection.normal = Vec3Df::crossProduct(e1, e2);
+					}
+					else {
+						intersection.normal = (1.0f - u - v) * vertices[triangle.v[0]].n + u * vertices[triangle.v[1]].n + v * vertices[triangle.v[2]].n;	
+					}
+					
+
+
+	             }
                 
             }
 		}

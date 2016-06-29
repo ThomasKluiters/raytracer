@@ -73,7 +73,7 @@ void init(Camera * camera, DebugScreen * debugScreen)
 	//at least ONE light source has to be in the scene!!!
 	//here, we set it to the current location of the camera
 	MyLightPositions.push_back(MyCameraPosition);
-	maxDepth = 4;
+	maxDepth = 5;
 	draw = false;
 
 	KDTreeBuilder builder(MyMesh);
@@ -186,6 +186,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 
 		Vec3Df out_reflection = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
+		drawLine(location, location + out_reflection, Vec3Df(0, 1, 1));
 		Vec3Df out_refraction;
 		if (temp > 0) {
 			out_refraction = Ni * in + (Ni * c - sqrt(temp))* inv_normal;
@@ -206,15 +207,13 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 			R = 1;
 			T = 0;
 		}
-		drawLine(location, 2 * (location - out_reflection), Vec3Df(0, 1, 1));
+		//drawLine(location, 2 * (location - out_reflection), Vec3Df(0, 1, 1));
 		drawLine(origin, location, Vec3Df(1, 1, 0));
-		if (R < 0.000001) { R = 0; return Tr * localColor + (1 - Tr) * T * performRayTracing(location, location + out_refraction, depth + 1); }
-		if (T < 0.000001) {
-			T = 0; return Tr * localColor + (1 - Tr) * R * performRayTracing(location, location + out_reflection, depth + 1);
-		}
+		if (R < 0.000001) { R = 0; return Tr * localColor + (1.0f - Tr) * T * performRayTracing(location, out_refraction, depth + 1); }
+		if (T < 0.000001) { T = 0; return Tr * localColor + (1.0f - Tr) * R * performRayTracing(location, out_reflection, depth + 1); }
 
 
-		return (Tr)* localColor + (1 - Tr) * T * performRayTracing(location, location + out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, location + out_reflection, depth + 1);
+		return (Tr)* localColor + (1.0f - Tr) * T * performRayTracing(location, out_refraction, depth + 1) + (1.0f - Tr) * R * performRayTracing(location, out_reflection, depth + 1);
 
 
 	}

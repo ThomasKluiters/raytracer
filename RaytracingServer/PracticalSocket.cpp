@@ -29,6 +29,7 @@ typedef char raw_type;       // Type used for raw data on this platform
 #include <netdb.h>           // For gethostbyname()
 #include <arpa/inet.h>       // For inet_addr()
 #include <unistd.h>          // For close()
+#include <string.h>
 #include <netinet/in.h>      // For sockaddr_in
 typedef void raw_type;       // Type used for raw data on this platform
 #endif
