@@ -16,6 +16,8 @@ private:
 
 public:
 	AreaLight(Vec3Df position, Vec3Df atPos, Vec3Df lightColour, unsigned int samples, float height, float width);
+	bool planeIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float & res);
+//	std::vector<Vec3Df> getSamplePoints();
 	bool inPlane(const Vec3Df & point);		// Returns whether the given point is a linear combination of height and width;
 	void pointAt(const Vec3Df & at_position);					// Points the  areaLight at lookAt position
 	void setPlane(float height, float width);

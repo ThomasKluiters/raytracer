@@ -111,6 +111,7 @@ private:
 	
 	void traceLensSystem(Vec3Df & opticalOrigin, Vec3Df & rayOrigin, Vec3Df & rayDest);
 
+	bool diskIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float radius, Vec3Df & pointOnPlane);
 	bool refractMyRay(float n1, float n2, const Vec3Df & normal, const Vec3Df rayIncident, Vec3Df & transmissiveRay);
 
 	

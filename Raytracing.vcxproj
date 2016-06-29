@@ -16,6 +16,7 @@
     <ClInclude Include="DebugScreen.h" />
     <ClInclude Include="FilmPlane.h" />
     <ClInclude Include="imageWriter.h" />
+    <ClInclude Include="KDTree.h" />
     <ClInclude Include="Lens.h" />
     <ClInclude Include="LensElement.h" />
     <ClInclude Include="Light.h" />

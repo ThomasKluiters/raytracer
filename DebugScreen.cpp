@@ -546,6 +546,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 		pushGL();
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_LIGHTING);
 
 		float backPlaneOffset = 50.0;
 		float x_scale = 0.9 * *x_resolution;
@@ -589,6 +590,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 			);
 			current--;
 		}
+		glEnable(GL_LIGHTING);
 		popGL();
 	}
 
@@ -625,6 +627,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 			cout << "WARNING: YOU ARE PASSING ANGLE-VALUES TO DebugScreen::drawCircle THAT ARE OUT OF BOUNDS \n -> Aborting!!";
 			return;
 		}
+		glDisable(GL_LIGHTING);
 			
 		glColor3f(1.0, 1.0, 0.0);
 		glPointSize(5.0);
@@ -647,6 +650,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 		for (double i = fromAngle; i < toAngle; i += fragments)
 			glVertex3f(origin[0] + (cos(i) * radius), origin[1] + (sin(i) * radius), 0.0);
 		glEnd();
+		glEnable(GL_LIGHTING);
 	}
 
 	// rayOrigin is a point on the backpane (x and z are ignored in 2D)
@@ -680,17 +684,18 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 				// -> Subtract pos_optical_axis(x-axis) from rayOrigin (x-axis) to get the offset.
 				// -> Determine the same kind of offset between origin and dest.
 				// -> These two form a scaling factor that we can use to rescale the dest-position on the aperture-plane.
-				
-				// THIS DOES NOT WORK! -> USE PROPER DISK INTERSECT
-				float scaleFactor = (rayOrigin[0] - pos_optical_axis[0]) / rayDest[0];
-				intersectPos = rayOrigin + ray * scaleFactor;
+
 				cout << "   > Is aperture! - " << endl;
-				cout << "   > IntersectPos! - " << intersectPos << endl;
-				glPointSize(4.0);
-				glColor3f(1.0, 1.0, 0.6);
-				glBegin(GL_POINTS);
-				glVertex3f(intersectPos[0], intersectPos[1], intersectPos[2]);
-				glEnd();
+
+				float scaleFactor = (rayOrigin[0] - pos_optical_axis[0]) / rayDest[0];
+				intersectPos = rayOrigin - ray * scaleFactor;
+				/*if (!diskIntersect(rayOrigin, rayDest, Vec3Df(-1.0, 0.0, 0.0), pos_optical_axis, currentEl.aperture, intersectPos)) {
+					cout << "   > FAILED aperture test! - " << endl;
+					break;
+				}
+				else {
+					cout << "   > PASSED aperture! - " << endl;
+				}*/
 			}
 			else {
 				// Otherwise; we interact with the spherical lens
@@ -701,13 +706,17 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 				cout << "Optical center! - " << lensCenter << endl;
 				if (!intersectWithSphere(currentEl.radius, lensCenter, rayOrigin, rayDest, intersectPos, normal) )
 				{
-					
 					cout << "   > MISSED! - " << endl;
 					break;
 				}
 			}
 
 			cout << "   > Intersects! -  <" << intersectPos << ">" << endl;
+			/*glPointSize(8.0);
+			glColor3f(1.0, 1.0, 0.6);
+			glBegin(GL_POINTS);
+			glVertex3f(intersectPos[0], intersectPos[1], intersectPos[2]);
+			glEnd();*/
 
 			drawLine(rayOrigin, intersectPos, Vec3Df(0.0,0.0,1.0));					// Draw line blue
 			
@@ -759,6 +768,24 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 		system("PAUSE");
 	}
 
+	bool DebugScreen::diskIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float radius, Vec3Df & pointOnPlane)
+	{
+		float dot_normalLine = Vec3Df::dotProduct(pointB, planeNormal);
+		if (dot_normalLine > 1e-5) {
+			Vec3Df crossingVector = planePos - pointA;
+			float res = Vec3Df::dotProduct(crossingVector, planeNormal) / dot_normalLine;
+
+			// If true; intersects the plane of the disk
+			if (res >= 0) {
+				pointOnPlane = pointA + res * pointB;
+				Vec3Df vectorToPoint = pointOnPlane - planePos;
+				float magnitude = Vec3Df::dotProduct(vectorToPoint, vectorToPoint);
+				//disk test
+				return (magnitude <= (radius * radius));
+			}
+		}
+	}
+
 	bool DebugScreen::refractMyRay(float n1, float n2, const Vec3Df & normal, const Vec3Df rayIncident, Vec3Df & transmissiveRay) {
 		float index = n1 / n2;
 		Vec3Df rayNorm = rayIncident;
@@ -774,7 +801,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 		}						
 
 		// Compute the transmissive ray by t> = n1/n2 * i> - (n1/n2 * cos(Oi) + sqrt(1 - sqSine) * normal))
-		transmissiveRay = index * rayNorm - (index + sqrtf(1 - sqSine)) * normal;
+		transmissiveRay = (index * rayNorm - (index + sqrtf(1 - sqSine)) * normal) * normal;
 		transmissiveRay.normalize();
 		return true;
 	}

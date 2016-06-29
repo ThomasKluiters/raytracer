@@ -68,7 +68,7 @@ unsigned int WindowSize_Y = 900;	// Y-resolution
 bool rendering = false;
 bool realtime_rendering = false;
 
-std::string sceneData = "bare_test.obj";
+std::string sceneData = "test2.obj";
 std::string renderOutput = "result.ppm";
 #define NUM_THREADS 16              // Max number of threads
 #define ANTIALIASING false
