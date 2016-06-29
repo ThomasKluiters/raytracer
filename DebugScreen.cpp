@@ -551,17 +551,26 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 		float backPlaneOffset = 50.0;
 		float x_scale = 0.9 * *x_resolution;
 		Vec3Df start = Vec3Df(*x_resolution - backPlaneOffset, *y_resolution / 2.0, 0.0);		// Start at right-side of screen
-		
+		Vec3Df at = start - Vec3Df(1.0, 0.0, 0.0);
+		at.normalize();
+
 		glRasterPos2i(start[0], start[1]);
 
-		glScalef(3.0,3.0,0.0);
-		glTranslatef(-1000, -340, 0.0);
+		glScalef(4.0,4.0,4.0);
+		glTranslatef(-1200, -340, 0.0);
 		//glTranslatef(-1200, 0, 0);
 
-		Vec3Df origin = start - Vec3Df(0.0, 0.0, 0.0);
-		Vec3Df dest = Vec3Df(1317.55, 460.0, 0.0);
-		drawLine(origin, dest, Vec3Df(0.0,1.0,0.0));
-		traceLensSystem(start, origin, dest);
+		Vec3Df dest0, dest1, dest2, dest3, dest4, dest5, dest6;
+
+		Vec3Df origin = start - Vec3Df(0.0, 8.0, 0.0);
+
+		float range = 7.0;
+		for (float offset = range; offset > -range; offset = offset - 1.2) {
+			origin = start - Vec3Df(0.0, offset, 0.0);
+			dest0 = start - Vec3Df(200.0, offset, 0.0);
+			traceLensSystem(at, start, origin, dest0);
+			drawLine(origin, (dest0 - origin), Vec3Df(1.0, 0.0, 1.0));
+		}
 
 		// Draw optical axis
 		drawLine(start, 
@@ -655,13 +664,11 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 
 	// rayOrigin is a point on the backpane (x and z are ignored in 2D)
 	// opticalOrigin indicates the start of the optical axis
-	void DebugScreen::traceLensSystem(Vec3Df & opticalOrigin, Vec3Df & rayOrigin, Vec3Df & rayDest) 
+	void DebugScreen::traceLensSystem(Vec3Df at, Vec3Df & opticalOrigin, Vec3Df & rayOrigin, Vec3Df & rayDest) 
 	{
 		int cursor = camera->currentLens.lensElements.size() - 1;	// Set cursor on first lensElement from filmPlane
 		Vec3Df pos_optical_axis = opticalOrigin;
 		cout << "\n   > START ! - \n - O: " << rayOrigin << "\n - D: " << rayDest<< endl;
-		
-
 
 		while (cursor >= 0) {
 			
@@ -686,16 +693,19 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 				// -> These two form a scaling factor that we can use to rescale the dest-position on the aperture-plane.
 
 				cout << "   > Is aperture! - " << endl;
-
-				float scaleFactor = (rayOrigin[0] - pos_optical_axis[0]) / rayDest[0];
-				intersectPos = rayOrigin - ray * scaleFactor;
-				/*if (!diskIntersect(rayOrigin, rayDest, Vec3Df(-1.0, 0.0, 0.0), pos_optical_axis, currentEl.aperture, intersectPos)) {
-					cout << "   > FAILED aperture test! - " << endl;
+				Vec3Df apertureNormal = Vec3Df(-1.0, 0.0, 0.0);
+				apertureNormal.normalize();
+				Vec3Df lensCenter = Vec3Df(pos_optical_axis[0] + 20000.0, pos_optical_axis[1], pos_optical_axis[2]);
+				// DiskIntersect still has a bug
+				//drawLine(pos_optical_axis, apertureNormal+pos_optical_axis, Vec3Df(1.0,1.0,1.0));
+				// Deliberate technical debt lmao
+				if (!intersectWithSphere(20000.0, lensCenter, rayOrigin, rayDest, intersectPos, normal)) {
 					break;
 				}
-				else {
-					cout << "   > PASSED aperture! - " << endl;
-				}*/
+			//	if ((intersectPos - lensCenter).getLength() > currentEl.aperture) {
+				//	break;
+				//}
+
 			}
 			else {
 				// Otherwise; we interact with the spherical lens
@@ -718,7 +728,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 			glVertex3f(intersectPos[0], intersectPos[1], intersectPos[2]);
 			glEnd();*/
 
-			drawLine(rayOrigin, intersectPos, Vec3Df(0.0,0.0,1.0));					// Draw line blue
+			drawLine(rayOrigin, intersectPos, Vec3Df(1.0,0.0,1.0));					// Draw line blue
 			
 			drawLine(intersectPos, intersectPos+normal*4, Vec3Df(1.0, 0.0,0.0));		// Draw normal red
 			float sqLength = (intersectPos - pos_optical_axis).getLength();		// Get length from lenscenter to intersect
@@ -765,13 +775,12 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 			}
 			cursor--;
 		}
-		system("PAUSE");
 	}
 
 	bool DebugScreen::diskIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float radius, Vec3Df & pointOnPlane)
 	{
 		float dot_normalLine = Vec3Df::dotProduct(pointB, planeNormal);
-		if (dot_normalLine > 1e-5) {
+		if (dot_normalLine > 1e-6) {
 			Vec3Df crossingVector = planePos - pointA;
 			float res = Vec3Df::dotProduct(crossingVector, planeNormal) / dot_normalLine;
 

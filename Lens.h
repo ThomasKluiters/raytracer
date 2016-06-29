@@ -7,14 +7,15 @@
 class Lens
 {
 public:
-
+	float focalLength;
 	Lens();
 	~Lens();
-	void addLensElement(LensElement element);
+	std::vector< LensElement > lensElements;
+	void setDGauss();
 	void setFishEye();
+	void setTele();
 	const std::vector< LensElement >::const_iterator itFront();
 	const std::vector< LensElement >::const_iterator itEnd();
-	std::vector< LensElement > lensElements;
 private:
 	
 };

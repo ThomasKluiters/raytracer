@@ -79,6 +79,7 @@ public:
 
 	// Update lookAt
 	void lookAt(const Vec3Df newPosition);
+	void traceThisRay(Vec3Df at, Vec3Df opticalOrigin, Vec3Df & rayOrigin, Vec3Df & rayDest);
 
 	// Modifies the given initial eyeray by this camera's lens
 	// Does nothing if the lensradius is less than or equal to 0
@@ -88,11 +89,15 @@ public:
 private:
 	bool planeIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float & res);
 	
-	bool diskIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float radius);
-
 	// Uses monte-carlo based concentric mapping to determine a point on this camera's lens
 	// Feed it random integers
 	Vec3Df sampleLens(float a, float b);
+
+	bool diskIntersect(const Vec3Df & pointA, const Vec3Df & pointB, Vec3Df & planeNormal, Vec3Df & planePos, float radius, Vec3Df & pointOnPlane);
+
+	bool refractMyRay(float n1, float n2, const Vec3Df & normal, const Vec3Df rayIncident, Vec3Df & transmissiveRay);
+
+	bool intersectWithSphere(float radius, Vec3Df spherePos, const Vec3Df & origin, const Vec3Df & dest, Vec3Df & intersectPos, Vec3Df & normal);
 
 
 };

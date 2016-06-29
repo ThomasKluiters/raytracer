@@ -393,6 +393,18 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 	}
 
+	case 'w':
+	{
+		myCamera.currentLens.setFishEye();
+		break;
+	}
+
+	case 'W':
+	{
+		myCamera.currentLens.setTele();
+		break;
+	}
+
 	case 'R':
 	{
 		realtime_rendering = !realtime_rendering;

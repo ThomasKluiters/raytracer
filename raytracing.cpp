@@ -337,6 +337,20 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		std::cout << " traced ray for" << rayOrigin << "," << rayDestination << "," << z << std::endl;
 		draw = false;
 	}
+	//
+	
+	if (t == 'T') {
+		clearAllLines();
+		draw = true;
+		Vec3Df at = testRayDestination - testRayOrigin;
+		at.normalize();
+
+		myCamera->traceThisRay(at, myCamera->camPos, testRayOrigin, testRayDestination);
+		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination - testRayOrigin, 4);
+		drawLine(testRayOrigin, testRayDestination, Vec3Df(1.0, 1.0, 0.0));
+		std::cout << " traced ray for" << rayOrigin << "," << rayDestination << "," << z << std::endl;
+		draw = false;
+	}
 
 	if (t == 'c') {
 		myCamera->lookAt(rayDestination);
