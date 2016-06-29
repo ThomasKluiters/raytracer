@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Raytracing", "Raytracing.vcxproj", "{AD3F39DC-5E4C-4348-97E1-770D1DFAAF54}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RaytracingServer", "RaytracingServer\RaytracingServer.vcxproj", "{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,14 @@ Global
 		{AD3F39DC-5E4C-4348-97E1-770D1DFAAF54}.Release|Win32.ActiveCfg = Release|Win32
 		{AD3F39DC-5E4C-4348-97E1-770D1DFAAF54}.Release|Win32.Build.0 = Release|Win32
 		{AD3F39DC-5E4C-4348-97E1-770D1DFAAF54}.Release|x64.ActiveCfg = Release|Win32
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Debug|Win32.Build.0 = Debug|Win32
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Debug|x64.ActiveCfg = Debug|x64
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Debug|x64.Build.0 = Debug|x64
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Release|Win32.ActiveCfg = Release|Win32
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Release|Win32.Build.0 = Release|Win32
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Release|x64.ActiveCfg = Release|x64
+		{9CE903C1-9C2F-446C-8CCC-B12B8DFC29E6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -67,6 +67,7 @@ void init(Camera * camera, DebugScreen * debugScreen)
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
+	cout << "Loaded Mesh successfully" << endl;
 
 	//one first move: initialize the first light source
 	//at least ONE light source has to be in the scene!!!
@@ -83,6 +84,7 @@ void init(Camera * camera, DebugScreen * debugScreen)
 * Return the color of your pixel.
 */
 //return the color of your pixel.
+/*
 Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
 {
 	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
@@ -98,7 +100,6 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 	const int material = MyMesh.triangleMaterials[triangle];
 
 	Vec3Df normal = intersection.normal;
-	Vec3Df inv_normal = -1.0f * normal;
 	Vec3Df location = intersection.position;
 	Vec3Df localColor = MyMesh.materials[material].Kd();
 
@@ -107,7 +108,7 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 		localColor = localColor + softshading(location, normal, origin, light, material);
 	}
 
-	if (depth < 6) {
+	if (depth < 6 && false) {
 		Vec3Df N = intersection.normal;
 		N.normalize();
 
@@ -127,6 +128,98 @@ Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int de
 
 	}
 
+	return localColor;
+}*/
+Vec3Df performRayTracing(const Vec3Df & origin, const Vec3Df & direction, int depth)
+{
+	Vec3Df dest = origin + direction;
+	Intersection intersection = tree->trace(origin, direction, MyMesh.triangles, MyMesh.vertices);
+	//drawLine(origin, dest, Vec3Df(1, 0, 0));
+	if (!intersection.hit())
+	{
+		drawLine(origin, dest, Vec3Df(1, 0, 0));
+		return Vec3Df(0, 0, 0);
+	}
+
+	const int triangle = intersection.triangle;
+
+	const int material = MyMesh.triangleMaterials[triangle];
+
+	Vec3Df normal = intersection.normal;
+	Vec3Df inv_normal = -1.0f * normal;
+	Vec3Df location = intersection.position;
+	Vec3Df localColor = MyMesh.materials[material].Ka();
+
+	normal.normalize();
+	inv_normal.normalize();
+
+	drawLine(location, location + normal, Vec3Df(1, 0, 1));
+
+	for (auto light : lights)
+	{
+		drawLine(location, location + 3 * normal, Vec3Df(0, 1, 1));
+		localColor = localColor + softshading(location, normal, origin, light, material);
+	}
+	float Tr = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Tr();
+
+	if (MyMesh.materials[material].has_Ni() && depth < maxDepth && Tr < 0.99) {
+
+		Vec3Df in = location - origin;
+		Vec3Df inv_in = -1.0f * in;
+		in.normalize();
+		inv_in.normalize();
+
+		float R, T;
+		float Ni = MyMesh.materials[MyMesh.triangleMaterials[triangle]].Ni();
+		float debug = Vec3Df::dotProduct(inv_in, normal);
+		if (debug < 0) {
+			Ni = 1.0f / Ni;
+			inv_normal = -1 * inv_normal;
+			normal = -1 * normal;
+		}
+
+		float c = Vec3Df::dotProduct(inv_normal, in);
+		float temp = (1 - (Ni * Ni) * (1 - (c*c)));
+
+		Vec3Df reflection;
+		Vec3Df refraction;
+
+
+		Vec3Df out_reflection = in - (2 * Vec3Df::dotProduct(in, normal) * normal);
+		Vec3Df out_refraction;
+		if (temp > 0) {
+			out_refraction = Ni * in + (Ni * c - sqrt(temp))* inv_normal;
+			out_refraction.normalize();
+
+
+			float cos_in = Vec3Df::dotProduct(inv_in, normal);
+			float cos_out = Vec3Df::dotProduct(out_refraction, inv_normal);
+
+			float Rs = pow((Ni * cos_in - cos_out) / (Ni * cos_in + cos_out), 2);
+			float Rp = pow((Ni * cos_out - cos_in) / (Ni * cos_out + cos_in), 2);
+
+			R = 0.5 * (Rs + Rp);
+			T = 1 - R;
+
+		}
+		else {
+			R = 1;
+			T = 0;
+		}
+		drawLine(location, 2 * (location - out_reflection), Vec3Df(0, 1, 1));
+		drawLine(origin, location, Vec3Df(1, 1, 0));
+		if (R < 0.000001) { R = 0; return Tr * localColor + (1 - Tr) * T * performRayTracing(location, location + out_refraction, depth + 1); }
+		if (T < 0.000001) {
+			T = 0; return Tr * localColor + (1 - Tr) * R * performRayTracing(location, location + out_reflection, depth + 1);
+		}
+
+
+		return (Tr)* localColor + (1 - Tr) * T * performRayTracing(location, location + out_refraction, depth + 1) + (1 - Tr) * R * performRayTracing(location, location + out_reflection, depth + 1);
+
+
+	}
+
+	drawLine(origin, location, Vec3Df(1, 1, 0));
 	return localColor;
 }
 
@@ -346,7 +439,14 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 	if (t == 'C') {
 		clearAllLines();
 		draw = true;
-		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0,0.6,0.0));
+		drawLine(myCamera->lookAtPos, myCamera->camPos, Vec3Df(1.0, 0.6, 0.0));
+		draw = false;
+	}
+
+	if (t == 'n') {
+		draw = true;
+		lichtbak(rayOrigin, rayDestination);
+        cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
 		draw = false;
 	}
 

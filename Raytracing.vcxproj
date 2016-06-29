@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="AreaLight.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Communication.h" />
     <ClInclude Include="DebugScreen.h" />
     <ClInclude Include="FilmPlane.h" />
     <ClInclude Include="imageWriter.h" />
@@ -22,6 +23,7 @@
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="PointLight.h" />
+    <ClInclude Include="PracticalSocket.h" />
     <ClInclude Include="raytracing.h" />
     <ClInclude Include="SpotLight.h" />
     <ClInclude Include="traqueboule.h" />
@@ -31,6 +33,7 @@
   <ItemGroup>
     <ClCompile Include="AreaLight.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Communication.cpp" />
     <ClCompile Include="DebugScreen.cpp" />
     <ClCompile Include="FilmPlane.cpp" />
     <ClCompile Include="Lens.cpp" />
@@ -38,6 +41,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="PracticalSocket.cpp" />
     <ClCompile Include="raytracing.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="SpotLight.cpp" />
@@ -102,7 +106,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freeglut.lib;glew32.lib;wsock32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

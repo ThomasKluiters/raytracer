@@ -90,6 +90,7 @@ public:
 	}
 	void setPixel(int i, int j, const RGBValue & rgb)
 	{
+        
 		_image[3 * (_width*j + i)] = rgb[0];
 		_image[3 * (_width*j + i) + 1] = rgb[1];
 		_image[3 * (_width*j + i) + 2] = rgb[2];
@@ -101,7 +102,7 @@ public:
 	bool writeImage(const char * filename);
 };
 
-bool Image::writeImage(const char * filename)
+inline bool Image::writeImage(const char * filename)
 {
 	FILE* file;
 #pragma warning (disable : 4996)
@@ -116,8 +117,13 @@ bool Image::writeImage(const char * filename)
 
 	std::vector<unsigned char> imageC(_image.size());
 
-	for (unsigned int i = 0; i < _image.size(); ++i)
-		imageC[i] = (unsigned char)(_image[i] * 255.0f);
+    for (unsigned int i = 0; i < _image.size(); ++i) {
+        
+//        if (_image[i] > 0)
+//            cout << "RGB " << _image[i] << endl;
+        
+        imageC[i] = (unsigned char)(_image[i] * 255.0f);
+    }
 
 	int t = fwrite(&(imageC[0]), _width * _height * 3, 1, file);
 	if (t != 1)
