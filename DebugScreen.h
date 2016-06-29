@@ -21,6 +21,10 @@ class DebugScreen
 
 public:
 	DebugScreen(std::string scenedata, Camera * camera, unsigned int * x_res, unsigned int * y_res, void * font);
+	DebugScreen();
+
+	// For sending purposes
+	void postInit(std::string scenedata, Camera * camera, unsigned int * x_res, unsigned int * y_res, void * font);
 
 	void putString(std::string description, std::string value);
 	void putBool(std::string description, bool value);

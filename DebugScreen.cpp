@@ -14,6 +14,16 @@ typedef std::map<std::string, std::chrono::duration<double> > chronomap;
 
 DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_res, unsigned int * y_res, void * font)
 {
+	postInit(scenedata, cam, x_res, y_res, font);
+}
+
+DebugScreen::DebugScreen()
+{
+	
+}
+
+void DebugScreen::postInit(std::string scenedata, Camera* cam, unsigned* x_res, unsigned* y_res, void* font)
+{
 	camera = cam;
 	sceneData = scenedata;
 	durations = durations;
@@ -28,6 +38,7 @@ DebugScreen::DebugScreen(std::string scenedata, Camera *cam, unsigned int * x_re
 	SHOW_RENDER_BUFFER = false;
 	SHOW_OPTICS = false;
 }
+
 
 	// Converts boolean to string.
 	std::string DebugScreen::toString(bool val) {

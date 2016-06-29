@@ -4,9 +4,19 @@
 Camera::Camera(int width, int height, Vec3Df &cameraPos, Vec3Df up_vector,
 				float fov, float aperture, float focaldistance)
 {
+	postInit(width, height, cameraPos, up_vector, fov, aperture, focaldistance);
+}
+
+Camera::Camera()
+{
+	
+}
+
+void Camera::postInit(int width, int height, Vec3Df& cameraPos, Vec3Df up_vector, float fov, float aperture, float focaldistance)
+{
 	// General options
 	camPos = cameraPos;
-	lookAtPos = Vec3Df(0.0,0.0,0.0);
+	lookAtPos = Vec3Df(0.0, 0.0, 0.0);
 	field_of_view = fov;
 	up = up_vector;
 	lensRadius = aperture;
@@ -14,6 +24,7 @@ Camera::Camera(int width, int height, Vec3Df &cameraPos, Vec3Df up_vector,
 	setFilmPlane(width, height);
 	reCalcAUS();
 }
+
 
 void Camera::reCalcAUS()
 {

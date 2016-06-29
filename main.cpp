@@ -71,10 +71,9 @@ std::string sceneData = "cube.obj";
 std::string renderOutput = "result.ppm";
 #define ANTIALIASING false
 
-Camera myCamera = Camera(WindowSize_X, WindowSize_Y, MyCameraPosition,
-                         Vec3Df(0.0, 1.0, 0.0), 50.0, 11.0, 8.0);
+Camera myCamera = Camera();
 
-DebugScreen myDebugScreen = DebugScreen(sceneData, &myCamera, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
+DebugScreen myDebugScreen = DebugScreen();
 
 unsigned int startX = 0;
 unsigned int endX = 800;
@@ -141,6 +140,11 @@ int main(int argc, char** argv)
 		endX = bounds[4];
 		endY = bounds[5];
 
+		myCamera.postInit(WindowSize_X, WindowSize_Y, MyCameraPosition,
+			Vec3Df(0.0, 1.0, 0.0), 50.0, 11.0, 8.0);
+
+		myDebugScreen.postInit(sceneData, &myCamera, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
+
 		// Set an initial lichtbak
 		lichtbak(Vec3Df(0.00125903, 0.00209838, 3.99), Vec3Df(1.25903, 2.09839, -6.0));
 
@@ -151,6 +155,11 @@ int main(int argc, char** argv)
 		Communication::sendImage(myCamera.sensor);
 		return 0;
 	}
+
+	myCamera.postInit(WindowSize_X, WindowSize_Y, MyCameraPosition,
+		Vec3Df(0.0, 1.0, 0.0), 50.0, 11.0, 8.0);
+
+	myDebugScreen.postInit(sceneData, &myCamera, &WindowSize_X, &WindowSize_Y, GLUT_BITMAP_9_BY_15);
 
 	glutInit(&argc, argv);
 
@@ -702,7 +711,47 @@ void keyboard(unsigned char key, int x, int y)
 			cout << "normal: " << normal << endl;
 			break;
 		}
-
+	case 'x':
+		            
+		            
+		            produceRay(0, 0, &origin00, &dest00);
+		            produceRay(0, WindowSize_Y - 1, &origin01, &dest01);
+		            produceRay(WindowSize_X - 1, 0, &origin10, &dest10);
+		            produceRay(WindowSize_X - 1, WindowSize_Y - 1, &origin11, &dest11);
+		            
+		            
+		            cout
+		            << "origin00[0] = " << origin00[0] << "; \n"
+		            << "origin00[1] = " << origin00[1] << "; \n"
+		            << "origin00[2] = " << origin00[2] << "; \n"
+		            << "origin01[0] = " << origin01[0] << "; \n"
+		            << "origin01[1] = " << origin01[1] << "; \n"
+		            << "origin01[2] = " << origin01[2] << "; \n"
+		            << "origin10[0] = " << origin10[0] << "; \n"
+		            << "origin10[1] = " << origin10[1] << "; \n"
+		            << "origin10[2] = " << origin10[2] << "; \n"
+		            << "origin11[0] = " << origin11[0] << "; \n"
+		            << "origin11[1] = " << origin11[1] << "; \n"
+		            << "origin11[2] = " << origin11[2] << "; \n\n"
+		            << endl;
+		            
+		            cout
+		            << "dest00[0] = " << dest00[0] << "; \n"
+		            << "dest00[1] = " << dest00[1] << "; \n"
+		            << "dest00[2] = " << dest00[2] << "; \n"
+		            << "dest01[0] = " << dest01[0] << "; \n"
+		            << "dest01[1] = " << dest01[1] << "; \n"
+		            << "dest01[2] = " << dest01[2] << "; \n"
+		            << "dest10[0] = " << dest10[0] << "; \n"
+		            << "dest10[1] = " << dest10[1] << "; \n"
+		            << "dest10[2] = " << dest10[2] << "; \n"
+		            << "dest11[0] = " << dest11[0] << "; \n"
+		            << "dest11[1] = " << dest11[1] << "; \n"
+		            << "dest11[2] = " << dest11[2] << "; \n"
+		            << endl;
+		            
+		            
+		            break;
 		// Click 'r'.
 	case 'r':
 		{

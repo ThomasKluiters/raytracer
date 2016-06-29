@@ -23,13 +23,19 @@ private:
 	
 
 public:
+	Camera();
 	Camera(int width, int height, Vec3Df &cameraPos, Vec3Df up_vector, 
 			float fov, float aperture, float focaldistance);
+	
 	Vec3Df camPos;			
 	Vec3Df lookAtPos;			// Lookat Position!
 	Vec3Df lookAtDir;			// Lookat direction (normalized)
 	Vec3Df up;
 	Vec3Df side;
+
+	// For headless purposes
+	void postInit(int width, int height, Vec3Df &cameraPos, Vec3Df up_vector,
+		float fov, float aperture, float focaldistance);
 
 	// Image sensor properties
 	FilmPlane sensor = FilmPlane(1, 1);
