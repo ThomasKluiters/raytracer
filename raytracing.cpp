@@ -425,7 +425,7 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		clearAllLines();
 		draw = true;
 		Vec3Df z = performRayTracing(testRayOrigin, testRayDestination - testRayOrigin, 4);
-		drawLine(testRayOrigin, testRayDestination, Vec3Df(1.0, 1.0, 0.0));
+		//drawLine(testRayOrigin, testRayDestination, Vec3Df(1.0, 1.0, 0.0));
 		std::cout << " traced ray for" << rayOrigin << "," << rayDestination << "," << z << std::endl;
 		draw = false;
 	}
@@ -447,6 +447,22 @@ void yourKeyboardFunc(char t, int x, int y, const Vec3Df & rayOrigin, const Vec3
 		lichtbak(rayOrigin, rayDestination);
         cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
 		draw = false;
+	}
+
+	if (t == 'p') {
+		if (lights.size() > 0) {
+			draw = true;
+			lights.pop_back();
+			lichtbak(rayOrigin, rayDestination);
+			cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
+			draw = false;
+		}
+		else {
+			draw = true;
+			lichtbak(rayOrigin, rayDestination);
+			cout << "Origin: " << rayOrigin << " Destination: " << rayDestination << endl;
+			draw = false;
+		}
 	}
 
 	if (t == 'z') {
