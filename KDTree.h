@@ -672,7 +672,7 @@ public:
 	*/
 	bool terminate(vector<int> T, float C_v, int N_l, int N_r)
 	{
-		return (T.size() * triangleTestCost * lambda(N_l, N_r)) <= C_v;
+		return (T.size() * triangleTestCost * lambda(N_l, N_r) * 0.8) <= C_v;
 	}
 
 	/**

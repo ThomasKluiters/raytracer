@@ -67,7 +67,7 @@ unsigned int WindowSize_Y = 900; // Y-resolution
 bool rendering = false;
 bool realtime_rendering = false;
 
-std::string sceneData = "cube.obj";
+std::string sceneData = "C:/Users/Thomas/Downloads/finalScene/LatestScene.obj";
 std::string renderOutput = "result.ppm";
 #define ANTIALIASING false
 
@@ -336,13 +336,7 @@ void performAntiAliasing(int x, int y, Vec3Df& rgb,
 **/
 void precomputeTriangleValues(std::vector<Triangle>::iterator triangle, int offset)
 {
-	int i = 0;
 
-	for (; i < offset && MyMesh.triangles.end() != triangle; ++triangle)
-	{
-		triangle->precomputeValues(MyMesh.vertices);
-		i++;
-	}
 }
 
 /**
@@ -543,36 +537,7 @@ void rayTraceStart(Vec3Df origin00, Vec3Df dest00,
 	cout << "Raytracing" << endl;
 
 
-	// Vector to store threads
-	std::vector<std::thread> precomputeThreads;
-
-	// Precompute values for triangles
-	std::time_t startTimePrecompute = std::time(nullptr);
-
-	unsigned int trianglesPerThread = ceil((float)MyMesh.triangles.size() / NUM_THREADS);
-
-	for (unsigned int t = 0; t < NUM_THREADS; ++t)
-	{
-		if ((t * trianglesPerThread) < MyMesh.triangles.size())
-		{
-			std::vector<Triangle>::iterator begin = MyMesh.triangles.begin() + (t * trianglesPerThread);
-
-			precomputeThreads.push_back(std::thread(
-				precomputeTriangleValues,
-				begin,
-				trianglesPerThread
-			));
-		}
-	}
-
-	// Join all ray tracing threads
-	for (std::vector<std::thread>::iterator thread = precomputeThreads.begin(); thread != precomputeThreads.end(); ++thread)
-	{
-		thread->join();
-	}
-
-	std::cout << "Precomputing values of " << MyMesh.triangles.size() << " triangles took " << std::time(nullptr) - startTimePrecompute << " seconds" << std::endl;
-
+	
 	// Starting time, used to display running time
 	std::time_t startTime = std::time(nullptr);
 

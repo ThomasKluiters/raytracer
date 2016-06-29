@@ -51,7 +51,7 @@ void init(Camera * camera, DebugScreen * debugScreen)
 	//model, e.g., "C:/temp/myData/GraphicsIsFun/dodgeColorTest.obj", 
 	//otherwise the application will not load properly
 	//MyMesh.loadMesh("cube.obj", true);
-	MyMesh.loadMesh(myDebugScreen->sceneData.data(), true);
+	MyMesh.loadMesh("C:/Users/Thomas/Downloads/finalScene/LatestScene.obj", true);
 	MyMesh.computeVertexNormals();
 	GLfloat mat_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
 	GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
